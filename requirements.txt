@@ -1,0 +1,19 @@
+# Runtime dependencies
+pydantic>=2.9,<3
+pydantic-settings>=2.6,<3
+
+# Document parsing (Phase 2)
+pdfplumber>=0.11,<0.12
+beautifulsoup4>=4.12,<5
+lxml>=5.2,<7
+python-docx>=1.1,<2
+
+# Retrieval and generation (Phase 3)
+chromadb>=1.5,<2
+openai>=3.31,<4
+
+# Reranking (Phase 7): local cross-encoder on ONNX Runtime (also installed by chromadb)
+onnxruntime>=1.20,<2
+tokenizers>=0.20,<1
+huggingface_hub>=0.25,<3
+numpy>=1.26,<3

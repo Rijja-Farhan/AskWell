@@ -1,0 +1,24 @@
+[project]
+name = "askwell"
+version = "0.1.0"
+description = "Internal knowledge assistant (RAG) for Nimbus Logistics."
+readme = "README.md"
+requires-python = ">=3.10"
+
+# Dependencies live in requirements.txt / requirements-dev.txt (installed with pip).
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [".claude"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"

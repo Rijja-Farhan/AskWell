@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Secrets
+.env
+
+# Vector DB / indexes / caches
+chroma_db/
+qdrant_storage/
+*.index
+.cache/
+
+# Generated data (keep raw seed data tracked, ignore processed output)
+data/processed/*
+!data/processed/.gitkeep
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Notes/
+prompts/
+.claude/
