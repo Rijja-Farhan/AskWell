@@ -1,0 +1,282 @@
+{
+  "name": "tune07_bge20",
+  "config": {
+    "collection": "askwell_structured",
+    "embedding_model": "gemini-embedding-2-preview",
+    "chunk_strategy": "structure",
+    "chunk_size": 800,
+    "chunk_overlap": 100,
+    "eval_retrieval_k": 10,
+    "retrieval_top_k": 5,
+    "chat_model": "gemini-3.6-flash",
+    "judge_model": "gemini-3.6-flash",
+    "eval_set_sha256": "443bb68924f3c822db6024dfbbdbd53a86fd2df414fb6da64767a5923d08cfc1",
+    "retrieval_mode": "hybrid",
+    "hybrid_candidates": 20,
+    "rrf_k": 60,
+    "bm25_weight": 0.3,
+    "bm25_version": 1,
+    "reranker": "cross-encoder",
+    "rerank_model": "BAAI/bge-reranker-base",
+    "rerank_model_revision": "2cfc18c9415c912f9d8155881c133215df768a70",
+    "rerank_onnx_file": "onnx/model.onnx",
+    "rerank_candidates": 20,
+    "rerank_version": 1
+  },
+  "stages": {
+    "retrieval": {
+      "ok": 80,
+      "n": 80
+    },
+    "generate": {
+      "ok": 0,
+      "n": 80
+    },
+    "judge": {
+      "ok": 0,
+      "n": 80
+    }
+  },
+  "categories": {
+    "simple": {
+      "n": 16,
+      "n_scored": 16,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": 0.9375,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.9688,
+      "superseded_hit@5": null,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    },
+    "exact-term": {
+      "n": 12,
+      "n_scored": 12,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": 0.5,
+      "recall@3": 0.9167,
+      "recall@5": 0.9167,
+      "recall@10": 1.0,
+      "mrr": 0.7639,
+      "superseded_hit@5": null,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    },
+    "multi-doc": {
+      "n": 12,
+      "n_scored": 12,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": 0.4583,
+      "recall@3": 0.7917,
+      "recall@5": 0.9167,
+      "recall@10": 1.0,
+      "mrr": 0.9333,
+      "superseded_hit@5": null,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    },
+    "conflicting-versions": {
+      "n": 10,
+      "n_scored": 10,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": 0.5,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.7333,
+      "superseded_hit@5": 1.0,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    },
+    "unanswerable": {
+      "n": 10,
+      "n_scored": 0,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": null,
+      "recall@3": null,
+      "recall@5": null,
+      "recall@10": null,
+      "mrr": null,
+      "superseded_hit@5": null,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    },
+    "access-denied": {
+      "n": 10,
+      "n_scored": 10,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": 0.9,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.95,
+      "superseded_hit@5": null,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    },
+    "injection": {
+      "n": 10,
+      "n_scored": 8,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": 0.6875,
+      "recall@3": 0.8125,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.8438,
+      "superseded_hit@5": null,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    },
+    "overall": {
+      "n": 80,
+      "n_scored": 68,
+      "n_answered": 0,
+      "n_judged": 0,
+      "recall@1": 0.6765,
+      "recall@3": 0.9265,
+      "recall@5": 0.9706,
+      "recall@10": 1.0,
+      "mrr": 0.8743,
+      "superseded_hit@5": 1.0,
+      "faithfulness": null,
+      "relevance": null,
+      "behavior_pass": null
+    }
+  },
+  "latency": {
+    "retrieval": {
+      "n": 80,
+      "median": 4.78,
+      "p95": 6.196
+    },
+    "rerank": {
+      "n": 80,
+      "median": 4.028,
+      "p95": 5.41
+    }
+  },
+  "behavior_failures": [],
+  "retrieval_misses": [
+    {
+      "id": "q020",
+      "question": "What expenses are coded to GL-6115?",
+      "first_gold_rank": 6
+    }
+  ],
+  "errors": [],
+  "comparison": {
+    "against": "phase06",
+    "deltas": {
+      "simple": {
+        "recall@1": -0.0625,
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "mrr": -0.0312,
+        "superseded_hit@5": null,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      },
+      "exact-term": {
+        "recall@1": -0.25,
+        "recall@3": -0.0833,
+        "recall@5": -0.0833,
+        "recall@10": 0.0,
+        "mrr": -0.1528,
+        "superseded_hit@5": null,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      },
+      "multi-doc": {
+        "recall@1": 0.0833,
+        "recall@3": -0.0833,
+        "recall@5": -0.0416,
+        "recall@10": 0.0,
+        "mrr": 0.0583,
+        "superseded_hit@5": null,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      },
+      "conflicting-versions": {
+        "recall@1": 0.1,
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "mrr": 0.05,
+        "superseded_hit@5": 0.0,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      },
+      "unanswerable": {
+        "recall@1": null,
+        "recall@3": null,
+        "recall@5": null,
+        "recall@10": null,
+        "mrr": null,
+        "superseded_hit@5": null,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      },
+      "access-denied": {
+        "recall@1": 0.1,
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "mrr": 0.05,
+        "superseded_hit@5": null,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      },
+      "injection": {
+        "recall@1": -0.0625,
+        "recall@3": -0.125,
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "mrr": -0.0104,
+        "superseded_hit@5": null,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      },
+      "overall": {
+        "recall@1": -0.022,
+        "recall@3": -0.0441,
+        "recall@5": -0.022,
+        "recall@10": 0.0,
+        "mrr": -0.0105,
+        "superseded_hit@5": 0.0,
+        "faithfulness": null,
+        "relevance": null,
+        "behavior_pass": null
+      }
+    },
+    "latency": {
+      "retrieval": {
+        "median": 4.221,
+        "p95": 5.449
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "tune07_minilm40",
+  "config": {
+    "collection": "askwell_structured",
+    "embedding_model": "gemini-embedding-2-preview",
+    "chunk_strategy": "structure",
+    "chunk_size": 800,
+    "chunk_overlap": 100,
+    "eval_retrieval_k": 10,
+    "retrieval_top_k": 5,
+    "chat_model": "gemini-3.6-flash",
+    "judge_model": "gemini-3.6-flash",
+    "eval_set_sha256": "443bb68924f3c822db6024dfbbdbd53a86fd2df414fb6da64767a5923d08cfc1",
+    "retrieval_mode": "hybrid",
+    "hybrid_candidates": 20,
+    "rrf_k": 60,
+    "bm25_weight": 0.3,
+    "bm25_version": 1,
+    "reranker": "cross-encoder",
+    "rerank_model": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "rerank_model_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "rerank_onnx_file": "onnx/model.onnx",
+    "rerank_candidates": 40,
+    "rerank_version": 1
+  }
+}
