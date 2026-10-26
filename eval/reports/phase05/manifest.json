@@ -1,0 +1,17 @@
+{
+  "name": "phase05",
+  "config": {
+    "collection": "askwell_structured",
+    "embedding_model": "gemini-embedding-2-preview",
+    "chunk_strategy": "structure",
+    "chunk_size": 800,
+    "chunk_overlap": 100,
+    "eval_retrieval_k": 10,
+    "retrieval_top_k": 5,
+    "chat_model": "gemini-3.6-flash",
+    "judge_model": "gemini-3.6-flash",
+    "eval_set_sha256": "443bb68924f3c822db6024dfbbdbd53a86fd2df414fb6da64767a5923d08cfc1",
+    "retrieval_mode": "dense",
+    "reranker": "none"
+  }
+}
