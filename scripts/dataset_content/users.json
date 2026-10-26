@@ -1,0 +1,12 @@
+[
+  {"user_id": "u01", "name": "Priya Shah", "role": "HR Business Partner", "department": "HR", "clearance": "confidential", "departments": ["HR"]},
+  {"user_id": "u02", "name": "Marcus Lee", "role": "IT Service Manager", "department": "IT", "clearance": "internal", "departments": []},
+  {"user_id": "u03", "name": "Elena Ruiz", "role": "Shift Supervisor, WH-DAL-02", "department": "Operations", "clearance": "internal", "departments": []},
+  {"user_id": "u04", "name": "Tom Becker", "role": "Finance Analyst", "department": "Finance", "clearance": "confidential", "departments": ["Finance"]},
+  {"user_id": "u05", "name": "Sam Okafor", "role": "Temporary Warehouse Associate (contractor)", "department": "Operations", "clearance": "public", "departments": []},
+  {"user_id": "u06", "name": "Dana Whitfield", "role": "Chief Operating Officer", "department": "Operations", "clearance": "restricted", "departments": ["HR", "IT", "Operations", "Finance"]},
+  {"user_id": "u07", "name": "Nadia Karim", "role": "IT Security Lead", "department": "IT", "clearance": "restricted", "departments": ["IT"]},
+  {"user_id": "u08", "name": "Jordan Price", "role": "HR Director", "department": "HR", "clearance": "restricted", "departments": ["HR"]},
+  {"user_id": "u09", "name": "Leo Brandt", "role": "Finance Controller", "department": "Finance", "clearance": "restricted", "departments": ["Finance"]},
+  {"user_id": "u10", "name": "Ava Chen", "role": "Operations Manager", "department": "Operations", "clearance": "confidential", "departments": ["Operations"]}
+]

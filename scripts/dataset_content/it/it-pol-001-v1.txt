@@ -1,0 +1,42 @@
+---
+title: Password and Authentication Standard
+format: docx
+access: internal
+effective_date: 2023-05-01
+last_updated: 2023-04-12
+owner: IT Security
+tags: passwords, MFA, authentication, password manager, security
+---
+## Purpose and Scope
+
+This standard sets the minimum rules for passwords and sign-in at Nimbus Logistics. It applies to every account that accesses Nimbus systems, including employee, contractor, service and administrator accounts. It supports the Acceptable Use Policy (IT-POL-002).
+
+## Password Requirements
+
+- Passwords must be at least 12 characters long.
+- Passwords must include at least one uppercase letter, one lowercase letter, one number and one symbol.
+- Passwords must not contain your name, username, "Nimbus" or the name of a site.
+- Passwords are checked against a list of known breached passwords and rejected if they appear on it.
+- Passwords expire every 90 days. You cannot reuse any of your last 10 passwords.
+
+## Multi-Factor Authentication
+
+Multi-factor authentication (MFA) is required for the VPN and for email accessed from outside a Nimbus site. Other systems use password sign-in only. Employees can receive MFA codes by SMS or in the Nimbus Authenticator app.
+
+Administrators must use MFA for all privileged accounts.
+
+## Account Lockout
+
+After 5 failed sign-in attempts the account is locked for 15 minutes. Users can unlock it sooner through self-service reset at reset.nimbus.example or by calling the Service Desk at extension 4357.
+
+## Password Manager
+
+Employees may use the company password manager, 1Password, but it is optional. Work passwords must not be written down or stored in spreadsheets. Shared team credentials must be kept in a shared 1Password vault, never sent by email or chat.
+
+## Shared and Service Accounts
+
+Shared accounts are not allowed except for warehouse handheld scanners, which use device accounts managed by IT. Service account passwords must be at least 30 characters and rotated by the system owner every 12 months.
+
+## Exceptions and Enforcement
+
+Exceptions require written approval from IT Security and expire after 6 months. Breaking this standard may lead to disciplinary action. This is the first version of IT-POL-001.

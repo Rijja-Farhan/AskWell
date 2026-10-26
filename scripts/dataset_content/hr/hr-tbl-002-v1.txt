@@ -1,0 +1,33 @@
+---
+title: 2026 Company Holiday Calendar
+format: pdf
+access: internal
+effective_date: 2025-11-01
+owner: People Team
+tags: holidays, calendar, premium pay, schedule
+---
+## About This Calendar
+
+This calendar lists the paid company holidays for 2026. Office employees have these days off with full pay. Warehouses and transportation keep operating on most holidays to meet customer commitments, so site staff who work a holiday are paid at 2 times their regular rate, as described in the Payroll and Leave FAQ.
+
+## 2026 Holidays
+
+| Holiday | Date | Day | Offices | Warehouses |
+| New Year's Day | 2026-01-01 | Thursday | Closed | Closed |
+| Martin Luther King Jr. Day | 2026-01-19 | Monday | Closed | Open, holiday pay |
+| Memorial Day | 2026-05-25 | Monday | Closed | Open, holiday pay |
+| Independence Day (observed) | 2026-07-03 | Friday | Closed | Open, holiday pay |
+| Labor Day | 2026-09-07 | Monday | Closed | Open, holiday pay |
+| Thanksgiving Day | 2026-11-26 | Thursday | Closed | Closed |
+| Day after Thanksgiving | 2026-11-27 | Friday | Closed | Open, holiday pay |
+| Christmas Day | 2026-12-25 | Friday | Closed | Closed |
+
+## Floating Holiday
+
+In addition to the holidays above, every employee receives one floating holiday per year. It can be used for a cultural or religious holiday, a birthday or any other personal day. The floating holiday must be requested in Workday like PTO, cannot be carried over, and is not paid out at termination. Warehouse staff may not use the floating holiday during the peak season blackout from November 20 to December 31.
+
+## Scheduling Notes
+
+Site managers publish holiday staffing rosters at least 4 weeks before each holiday. Volunteers are scheduled first, then staff are assigned by seniority in reverse order. Employees scheduled to work a holiday can swap shifts with a qualified colleague with supervisor approval.
+
+When a holiday falls on a Saturday it is observed on the Friday before; when it falls on a Sunday it is observed on the Monday after.

@@ -1,0 +1,42 @@
+---
+title: Delegation of Authority and Signing Policy
+format: pdf
+access: confidential
+effective_date: 2024-10-01
+last_updated: 2025-05-05
+owner: CFO Office
+tags: delegation of authority, signing, contracts, payments, treasury
+---
+## Purpose
+
+This policy (FIN-POL-003) sets who may sign contracts and approve payments on behalf of Nimbus Logistics. It is confidential because it identifies the people and thresholds that control payments, which fraudsters could target.
+
+## Contract Signing Limits
+
+| Role | Maximum total contract value | Notes |
+|---|---|---|
+| Department head | $50,000 | Within approved budget only |
+| Vice President | $250,000 | Within approved budget only |
+| CFO | $2,000,000 | Any budgeted or unbudgeted contract |
+| CEO | $10,000,000 | Above this needs Board approval |
+| COO | $2,000,000 | Operations and carrier contracts only |
+
+Contracts longer than 3 years, or with automatic renewal, must also be reviewed by Legal before signing, whatever their value.
+
+## Payments and Wire Transfers
+
+- Every payment run is approved by two people from the approved signer list.
+- Wire transfers above $250,000 require approval from both the CFO and the Treasurer.
+- Urgent payment requests received by email or phone must be confirmed by calling the requester on a number from the employee directory, never a number given in the request.
+
+## Bank Account Changes
+
+Changes to supplier bank details are a common fraud target. Any change must be verified by calling the supplier on the phone number held in the supplier master file, and approved by two members of the Accounts Payable team. New bank details cannot be used for 5 business days after the change.
+
+## Delegation During Absence
+
+Signing authority may be delegated to another person at the same or higher level for up to 30 days, in writing, with a copy to the CFO Office. Authority may never be delegated to a contractor.
+
+## Breaches
+
+Signing a contract or approving a payment beyond your authority is a serious breach and may lead to dismissal. Suspected payment fraud must be reported immediately to the Finance Controller and IT Security.

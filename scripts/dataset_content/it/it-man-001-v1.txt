@@ -1,0 +1,48 @@
+---
+title: VPN Setup and Troubleshooting Guide
+format: md
+access: internal
+effective_date: 2025-04-01
+last_updated: 2025-09-12
+owner: IT Infrastructure
+tags: VPN, remote access, GlobalConnect, error codes, troubleshooting
+---
+## Overview
+
+Nimbus uses the GlobalConnect VPN client to give remote employees secure access to internal systems such as the warehouse management system, file shares and the finance applications. The VPN is required whenever you work outside a Nimbus site. This guide covers installation, daily use and the most common error codes.
+
+## Installing the VPN Client
+
+1. Open the Company Portal on your Nimbus laptop.
+2. Search for "GlobalConnect VPN" and select Install.
+3. Restart the laptop when prompted.
+4. Open GlobalConnect and enter the gateway address vpn.nimbus.example.
+5. Sign in with your Nimbus email address and approve the push request in the Nimbus Authenticator app.
+
+Installation normally takes less than 10 minutes. The VPN only works on Nimbus-managed devices because it checks the device certificate.
+
+## Daily Use
+
+Connect to the VPN before opening internal applications. The VPN disconnects automatically after 12 hours, and you will be asked to approve a new MFA request. Microsoft 365 traffic such as Teams and Outlook goes directly to the internet and does not use the VPN, which keeps calls fast.
+
+## Common Error Codes
+
+### NX-4012: Device certificate expired
+
+Your laptop's device certificate has expired, so the VPN rejects the connection. Open Company Portal, go to Device Certificates and select Renew. Connect to a Nimbus office network or use the guest hotspot workaround from the Service Desk if you cannot reach the Company Portal. After renewal, restart the laptop and connect again.
+
+### NX-4013: MFA request timed out
+
+You did not approve the push notification within 60 seconds. Make sure your phone has a data connection, open the Nimbus Authenticator app and try again.
+
+### NX-4020: Split tunnel conflict
+
+Another VPN or proxy tool on the laptop is conflicting with GlobalConnect. Disconnect any personal VPN, quit other network tools and reconnect.
+
+### NX-4031: Account locked
+
+Your account has been locked after too many failed sign-in attempts. Wait 30 minutes, or unlock it through self-service at reset.nimbus.example.
+
+## Getting Help
+
+If an error is not listed here, check the Error Code Reference table or call the Service Desk at extension 4357. Have the error code and the time of the error ready.

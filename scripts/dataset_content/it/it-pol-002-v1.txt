@@ -1,0 +1,39 @@
+---
+title: Acceptable Use Policy
+format: pdf
+access: internal
+effective_date: 2024-09-01
+last_updated: 2024-08-15
+owner: IT Security
+tags: acceptable use, devices, USB, phishing, monitoring, software
+---
+## Purpose
+
+This policy (IT-POL-002) explains how employees, contractors and temporary workers may use Nimbus Logistics devices, networks, email and software. It protects our customers' data, our operations and our people.
+
+## Personal Use
+
+Limited personal use of Nimbus devices and internet access is allowed if it does not affect work, use excessive bandwidth or break any law or policy. Streaming video, gaming and crypto-currency mining on Nimbus devices are not allowed. Nimbus systems must never be used to store personal files such as family photos or personal tax records.
+
+## Software and Devices
+
+- Software may only be installed through the Company Portal. Requests for software not listed there go through a Service Portal ticket and require IT Security review.
+- USB storage devices are blocked on all Nimbus laptops and desktops. Exceptions must be requested through a ticket and are approved for a maximum of 30 days.
+- Personal phones may access email and Teams only through the managed Outlook and Teams apps after enrolling in mobile device management.
+- Warehouse handheld scanners and printers must never be connected to personal devices or chargers that transfer data.
+
+## Email and Phishing
+
+Employees must not forward work email to personal accounts. Suspicious emails must be reported with the "Report Phish" button in Outlook, then deleted. Nimbus runs phishing simulations every quarter; employees who fail two simulations in a row must complete extra training within 14 days.
+
+## Monitoring and Privacy
+
+Nimbus monitors its networks, devices and accounts to protect security. Monitoring includes email filtering, web filtering and endpoint detection and response. Employees should have no expectation of privacy when using Nimbus systems, within the limits set by law.
+
+## Lost or Stolen Devices
+
+A lost or stolen laptop, phone or scanner must be reported to the Service Desk at extension 4357 within 1 hour of discovering the loss, at any time of day. The Service Desk will lock and remotely wipe the device. Delayed reporting may lead to disciplinary action.
+
+## Violations
+
+Breaking this policy may lead to loss of access, disciplinary action or termination. Illegal activity will be reported to law enforcement. Questions about this policy can be sent to security@nimbus.example.

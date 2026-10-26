@@ -1,0 +1,43 @@
+---
+title: Hazardous Materials Handling and Storage Policy
+format: docx
+access: confidential
+effective_date: 2024-08-01
+last_updated: 2025-04-10
+owner: Operations Safety
+tags: hazmat, dangerous goods, DOT, storage, spill response
+---
+## Purpose
+
+This policy sets the rules for receiving, storing and shipping hazardous materials (hazmat) at Nimbus distribution centers. It is confidential because it describes where hazardous goods are stored and how they are secured.
+
+## Certified Staff Only
+
+Only employees with a current DOT hazmat certification may receive, store, pack or load hazardous materials. The certification must be renewed every 3 years, as required by federal regulations. Site managers keep a list of certified staff in the training system and review it every month.
+
+## Approved Storage Locations
+
+Hazardous materials may only be stored at approved sites. Flammable liquids are stored only at WH-DAL-01 in Bay H, which has a fire suppression system and spill containment. Corrosives and lithium batteries are stored in caged area C4 at WH-ATL-01. No hazardous materials may be stored at WH-PHX-01 or WH-SEA-01.
+
+Bay H is locked outside operating hours. Keys are held by the shift supervisor and the site security office only.
+
+## Quantity Limits
+
+| Material class | Maximum on site | Location |
+|---|---|---|
+| Class 3 flammable liquids | 5,000 gallons | WH-DAL-01 Bay H |
+| Class 8 corrosives | 2,000 gallons | WH-ATL-01 area C4 |
+| Class 9 lithium batteries | 400 pallets | WH-ATL-01 area C4 |
+| Class 2.2 non-flammable gases | 150 cylinders | WH-DAL-01 Bay H |
+| Class 4.1 flammable solids | 100 pallets | WH-DAL-01 Bay H |
+
+## Spill Response
+
+1. Stop work and keep people away from the spill.
+2. Call the shift supervisor and, for large spills, the emergency number 911.
+3. Trained responders use the spill kit located at each hazmat area.
+4. Report the spill in the incident system within 4 hours, as for any incident under the Warehouse Safety Policy.
+
+## Shipping Hazardous Materials
+
+Hazmat shipments require shipping papers, correct labels and placards. Only carriers approved for hazmat in the Carrier Service Level Agreements may be used. Shipping papers are checked by a second certified employee before the trailer leaves the dock. This policy is document OPS-POL-002.

@@ -1,0 +1,8 @@
+Incident ID,Date,Site,Incident type,Estimated loss (USD),Police report,Status
+SEC-25-001,2025-01-17,WH-DAL-02,Trailer theft from yard,186000,Yes,Recovered
+SEC-25-002,2025-03-04,WH-PHX-01,Pilferage by temporary worker,12400,Yes,Closed
+SEC-25-003,2025-04-22,WH-ATL-01,Fictitious pickup (fraudulent carrier),243000,Yes,Under investigation
+SEC-25-004,2025-06-09,WH-CHI-03,"Fence breach, no loss",0,No,Closed
+SEC-25-005,2025-07-30,WH-SEA-01,Electronics pallet missing,58700,Yes,Under investigation
+SEC-25-006,2025-09-12,WH-DAL-01,Badge tailgating at dock gate,0,No,Closed
+SEC-25-007,2025-10-03,WH-ATL-01,Seal tampering in transit,31500,Yes,Insurance claim filed

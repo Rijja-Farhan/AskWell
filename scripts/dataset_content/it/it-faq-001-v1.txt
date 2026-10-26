@@ -1,0 +1,55 @@
+---
+title: IT Service Desk FAQ
+format: html
+access: public
+effective_date: 2025-01-06
+last_updated: 2025-09-29
+owner: IT Service Desk
+tags: service desk, support hours, password reset, tickets, response times
+---
+## Contacting the Service Desk
+
+### What are the Service Desk hours?
+
+The Service Desk is staffed Monday to Friday from 7:00 to 19:00 Central Time. Outside those hours, an on-call engineer handles urgent issues that stop a site from shipping orders or that affect security. The phone line is always open.
+
+### How do I contact the Service Desk?
+
+Call extension 4357 (it spells HELP) from any Nimbus phone, or 1-800-555-0177 from outside. You can also raise a ticket in the Service Portal at help.nimbus.example or chat with the Service Desk in Teams.
+
+## Passwords and Accounts
+
+### How do I reset my password?
+
+Use self-service password reset at reset.nimbus.example. You will need your Nimbus Authenticator app. If you cannot use self-service, call the Service Desk; agents will verify your identity with a callback to your registered phone. The Service Desk will never ask you for your current password.
+
+### My account is locked. What should I do?
+
+Accounts unlock automatically after a waiting period, or you can unlock your account immediately using self-service reset.
+
+## Tickets and Response Times
+
+### How quickly will my ticket be handled?
+
+Tickets are prioritized by business impact. The targets for a first response are:
+
+| Priority | Example | First response target |
+|---|---|---|
+| P1 | A site cannot ship orders | 1 hour |
+| P2 | A team cannot work | 4 hours |
+| P3 | One person cannot work | 1 business day |
+| P4 | Question or request | 3 business days |
+
+### Can I escalate a ticket?
+
+Yes. If a ticket misses its target, reply to the ticket email with "escalate" in the subject. The Service Desk team lead will review it within 2 business hours.
+
+## Hardware and Software
+
+### How do I request new software?
+
+Install approved software yourself from the Company Portal. If the software is not listed, raise a software request ticket; IT Security reviews new software within 5 business days.
+
+### My laptop is broken. Will I get a loan device?
+
+Yes. Each site has loan laptops. A loan device can be ready within 4 hours for P2 and P3 hardware tickets.

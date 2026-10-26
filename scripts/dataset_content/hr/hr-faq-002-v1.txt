@@ -1,0 +1,56 @@
+---
+title: Payroll and Leave FAQ
+format: html
+access: internal
+effective_date: 2025-03-01
+last_updated: 2025-09-05
+owner: Payroll Team
+tags: payroll, payslip, overtime, direct deposit, PTO requests
+---
+## Payroll Basics
+
+### How often am I paid?
+
+All employees are paid biweekly, every other Friday. When a payday falls on a bank holiday, pay is deposited on the previous business day.
+
+### Where do I find my payslip?
+
+Payslips are available in Workday under Pay > Payslips from the Wednesday before each payday. Paper payslips are not issued.
+
+### How do I change my direct deposit account?
+
+Update your bank details in Workday under Pay > Payment Elections. Changes made after the Monday of a pay week take effect in the following pay cycle, so your next payment may still go to the old account.
+
+## Overtime and Shift Pay
+
+### How is overtime paid?
+
+Non-exempt employees are paid 1.5 times their regular rate for hours worked over 40 in a work week. Work on a company holiday at a warehouse is paid at 2 times the regular rate. Overtime must be approved in advance by your supervisor in Kronos.
+
+### Is there a shift differential?
+
+Yes. Second shift earns an extra $1.25 per hour and third shift earns an extra $2.00 per hour.
+
+## Requesting Leave
+
+### How do I request PTO?
+
+Open Workday, go to Time Off, choose the dates and the PTO type, and submit. Your manager receives a notification. Requests longer than 3 consecutive days must be made at least 2 weeks in advance, as set out in HR-POL-002.
+
+### Where can I see my PTO balance?
+
+Your current PTO and sick leave balances are shown in Workday under Time Off > Balances. Balances update after each payroll run.
+
+### Who do I contact about leave of absence?
+
+Medical, military and parental leaves are handled by the Leave Team at leave@nimbus.example. Tell your manager as early as possible.
+
+## Tax Documents
+
+### When will I receive my W-2?
+
+W-2 forms are available in Workday by January 31 each year. Paper copies are mailed only to employees who opted out of electronic delivery.
+
+### How do I change my tax withholding?
+
+Submit a new W-4 in Workday under Pay > Withholding Elections. Changes apply from the next payroll run.

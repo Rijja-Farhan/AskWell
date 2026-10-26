@@ -1,0 +1,14 @@
+Code,System,Meaning,First fix,Escalate to
+NX-2101,Email,Mailbox full (50 GB quota reached),Empty Deleted Items and archive old mail,Service Desk
+NX-2107,Email,Calendar sync failure,Remove and re-add the account,Service Desk
+NX-2150,Email,Shared mailbox access denied,Request access with manager approval,Service Desk
+NX-3301,WMS scanner,Cannot connect to WMS,Check Wi-Fi and sign in again,Site supervisor
+NX-3305,WMS scanner,Barcode read failure,Clean scanner window and rescan,Site supervisor
+NX-3310,WMS scanner,App version mismatch,Update WMS app from Company Portal,IT Field Services
+NX-4012,VPN,Device certificate expired,Renew certificate in Company Portal,Service Desk
+NX-4013,VPN,MFA request timed out,Approve push within 60 seconds,Service Desk
+NX-4020,VPN,Split tunnel conflict,Disconnect other VPN or proxy tools,IT Infrastructure
+NX-4031,VPN,Account locked,Wait 30 minutes or use self-service reset,Service Desk
+NX-5002,Label printing,Print queue stuck,Restart the label print service,IT Field Services
+NX-5010,Badge printer,Badge printer offline,Power cycle the printer,Site security
+NX-9001,EDR,Possible ransomware behavior,Do not power off; call the Service Desk immediately,IT Security (SEV1)

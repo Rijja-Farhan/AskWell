@@ -1,0 +1,41 @@
+---
+title: Paid Time Off Policy
+format: docx
+access: internal
+effective_date: 2023-01-01
+last_updated: 2023-01-01
+owner: People Team
+tags: PTO, vacation, sick leave, leave
+---
+## Purpose
+
+This policy sets out how Nimbus Logistics employees earn, request and use paid time off (PTO) and sick leave. It applies to all full-time employees in the United States. Part-time employees accrue PTO in proportion to their scheduled hours.
+
+## PTO Entitlement
+
+Full-time employees receive 20 days of PTO per calendar year. PTO accrues each pay period, at roughly 0.77 days per biweekly paycheck. Employees with 5 or more years of continuous service receive 22 days per year.
+
+New employees may use PTO after completing their first 30 days of employment. Accrued PTO cannot go negative by more than 3 days, and only with manager approval.
+
+## Carryover and Expiry
+
+Employees may carry over up to 5 unused PTO days into the next calendar year. Carried-over days must be used by March 31; any carried-over days left after March 31 expire. PTO above the carryover limit is forfeited on December 31 unless state law requires otherwise. Accrued, unused PTO is paid out at termination where state law requires it.
+
+## Sick Leave
+
+In addition to PTO, full-time employees receive 8 days of paid sick leave per year. Sick leave can be used for the employee's own illness, medical appointments, or to care for a family member. Sick leave does not carry over and is not paid out at termination. Absences of more than 3 consecutive days require a doctor's note sent to HR, not to the manager.
+
+## Requesting Time Off
+
+- Requests are made in Workday under Time Off.
+- Requests for more than 3 consecutive days must be submitted at least 2 weeks in advance.
+- Managers should respond within 3 business days.
+- Requests are approved based on business needs and the order in which they were received.
+
+## Peak Season Blackout
+
+Because November and December are our busiest months, warehouse, dock and transportation staff cannot take PTO between November 15 and December 31, except for approved emergencies. Office staff may take PTO during this period with manager approval. Questions about payroll and PTO balances are answered in the Payroll and Leave FAQ (HR-FAQ-002).
+
+## Policy Owner
+
+The People Team owns this policy (HR-POL-002) and reviews it each year. This is the first version of the policy.

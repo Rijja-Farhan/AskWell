@@ -1,0 +1,38 @@
+---
+title: Carrier Service Level Agreements
+format: pdf
+access: internal
+effective_date: 2025-03-01
+last_updated: 2025-08-18
+owner: Transportation
+tags: carriers, SLA, on-time, claims, penalties, hazmat
+---
+## About This Summary
+
+This document summarizes the service level agreements (SLAs) Nimbus has with its main carriers for 2025. Transportation planners use it to choose carriers and to check performance in the monthly carrier review. Full contracts are held by the Transportation team.
+
+## Carrier SLA Table
+
+| Carrier | Mode | On-time target | Pickup cutoff | Claims window | Late penalty | Hazmat approved |
+| SwiftFreight | LTL | 95% | 16:00 | 30 days | 2% of monthly invoice | Yes |
+| BlueLine Parcel | Parcel | 97% | 18:00 | 15 days | Service credit per late parcel | No |
+| Lonestar Trucking | Full truckload | 96% | 14:00 | 30 days | 3% of monthly invoice | Yes |
+| Coastal Intermodal | Rail intermodal | 90% | 12:00 | 45 days | 1% of monthly invoice | No |
+| RapidAir Cargo | Air freight | 98% | 15:00 | 14 days | Full refund of late shipment | No |
+| Midwest Haul | LTL | 94% | 17:00 | 30 days | 2% of monthly invoice | Yes |
+
+## How Performance Is Measured
+
+On-time performance is measured each month as the share of shipments delivered by the promised date. Shipments delayed by weather events declared by the National Weather Service are excluded. Carriers that miss their target for two months in a row are placed on a performance improvement plan.
+
+## Claims
+
+Damage and loss claims must be filed with the carrier within its claims window, counted from the delivery date. Claims are filed by the Transportation team using the evidence collected during receiving, including photos and damage tags.
+
+## Penalties and Credits
+
+Penalties are calculated by Finance at month-end and deducted from the next carrier invoice. Planners must not agree to waive penalties; waivers require approval from the Transportation Director and the Finance Controller.
+
+## Choosing a Carrier
+
+Hazardous material shipments may only use carriers approved for hazmat in the table above. For time-critical shipments, planners should prefer carriers with on-time targets of 97% or higher.

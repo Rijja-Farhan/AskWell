@@ -1,0 +1,44 @@
+---
+title: Travel and Expense Policy
+format: docx
+access: internal
+effective_date: 2024-04-01
+last_updated: 2024-03-18
+owner: Finance Controller
+tags: travel, expenses, per diem, hotel, mileage, reimbursement
+---
+## Purpose and Scope
+
+This policy (FIN-POL-001) explains which business travel and expenses Nimbus Logistics reimburses, and how employees claim them. It applies to all employees and to contractors whose contracts allow expense claims. Expenses must be reasonable, necessary for Nimbus business and approved in advance where this policy requires it.
+
+## Booking Travel
+
+All flights, hotels and rental cars must be booked through the Nimbus travel portal, which applies our negotiated rates. Trips that include a flight must be approved by the traveler's manager before booking.
+
+- All flights are booked in economy class, whatever their length.
+- Business class is allowed only with CFO approval.
+
+## Hotels
+
+The nightly hotel limit is $200 including taxes. In high-cost cities (New York, San Francisco, Boston and Seattle) the limit is $250 per night. Stays above the limit need manager approval before booking.
+
+## Meals
+
+The daily meal allowance is $60 per day when traveling overnight, covering breakfast, lunch and dinner. On the first and last day of a trip the allowance is 75% of the daily amount. Alcohol is reimbursed only at customer entertainment events approved in advance by a director. Meal expenses are coded to GL-6110.
+
+## Mileage and Ground Transport
+
+Use of a personal car for business is reimbursed at $0.67 per mile. Commuting between home and your usual workplace is not reimbursed. Taxis and ride-share services are reimbursed when public transport is not practical. Mileage and ground transport are coded to GL-6115.
+
+## Receipts and Claims
+
+- Itemized receipts are required for every expense above $25.
+- Claims must be submitted in Concur within 30 days of the expense date.
+- Claims submitted more than 90 days after the expense date are not reimbursed.
+- Airfare and hotels are coded to GL-6105.
+
+Managers must review and approve claims within 5 business days. Finance audits a random sample of claims every month.
+
+## Non-Reimbursable Expenses
+
+Nimbus does not reimburse personal entertainment, traffic or parking fines, upgrades not approved under this policy, travel for family members, or lost personal items. This version of FIN-POL-001 replaces the 2023 version.

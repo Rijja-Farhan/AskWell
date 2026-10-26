@@ -1,0 +1,37 @@
+---
+title: FY2026 Department Budget Summary
+format: pdf
+access: confidential
+effective_date: 2025-12-09
+owner: CFO Office
+tags: budget, FY2026, headcount, departments
+---
+## About This Summary
+
+This summary shows the approved operating budget for each department for fiscal year 2026, compared with the forecast actual spend for FY2025. It was presented to the Board Finance Committee on 2025-12-09. It is confidential and must not be shared outside department heads and the finance team.
+
+## Budget by Department
+
+| Department | FY2025 forecast (USD M) | FY2026 budget (USD M) | Change | FY2026 headcount |
+| Operations | 312.0 | 338.5 | +8.5% | 3,850 |
+| Transportation | 96.4 | 104.0 | +7.9% | 610 |
+| IT | 28.6 | 31.2 | +9.1% | 145 |
+| Finance | 9.8 | 10.1 | +3.1% | 72 |
+| HR | 8.9 | 9.4 | +5.6% | 64 |
+| Sales and Customer Experience | 21.5 | 23.0 | +7.0% | 230 |
+| Executive and Legal | 7.2 | 7.3 | +1.4% | 28 |
+
+## Key Assumptions
+
+- Shipment volume grows 10% in FY2026, including the opening of WH-SAV-01 in March 2026.
+- The Phoenix site WH-PHX-01 operates until the end of Q3 2026.
+- The merit increase budget is 3.5% of base payroll, plus 1.0% for promotions.
+- The starting wage for Dallas warehouse associates rises to $19.75 per hour from 2026-01-01.
+
+## IT Budget Notes
+
+The IT increase funds the laptop refresh program, the WMS upgrade at all sites and two new security engineers. Software subscriptions (GL-6320) rise by 12% because of the move to the new identity provider and phishing training platform.
+
+## Spending Controls
+
+Department heads must stay within their budget. Spending above budget requires CFO approval under the Delegation of Authority and Signing Policy. Finance publishes monthly budget-versus-actual reports by the 10th business day of each month.

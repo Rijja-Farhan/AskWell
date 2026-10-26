@@ -1,0 +1,54 @@
+---
+title: Warehouse Operations FAQ
+format: html
+access: internal
+effective_date: 2025-01-10
+last_updated: 2025-10-01
+owner: Operations
+tags: shifts, overtime, breaks, peak season, warehouse
+---
+## Shifts and Scheduling
+
+### What are the standard shift times?
+
+Most distribution centers run three shifts: first shift from 06:00 to 14:30, second shift from 14:30 to 23:00 and third shift from 23:00 to 06:30. Some sites adjust times by 30 minutes to suit local traffic; check the schedule posted at your site.
+
+### How are schedules published?
+
+Schedules are published in Kronos every Thursday for the following week. Shift swaps must be requested in Kronos and approved by both supervisors at least 24 hours before the shift.
+
+## Breaks
+
+### What breaks do I get?
+
+On an 8-hour shift you get a 30-minute unpaid meal break and two 15-minute paid rest breaks. Breaks are scheduled by your supervisor so that each area stays staffed.
+
+## Overtime and Peak Season
+
+### How do I sign up for overtime?
+
+Voluntary overtime slots are posted in Kronos. Sign up on a first come, first served basis. Overtime must be approved in advance by your supervisor.
+
+### Is overtime mandatory during peak season?
+
+During peak season, from November 20 to December 31, sites may require up to 10 hours of mandatory overtime per week, announced at least 48 hours in advance. PTO is not available to warehouse staff in this period except for emergencies.
+
+## Safety and Equipment
+
+### What PPE do I need on the floor?
+
+You need a high-visibility vest, safety boots and, at dock doors, cut-resistant gloves. Full rules are in the Warehouse Safety Policy, OPS-POL-001.
+
+### My scanner is not working. Who do I call?
+
+Try the fixes in the Handheld Scanner User Manual first. If the scanner still does not work, tell your supervisor, who will swap the device and raise a ticket with IT Field Services.
+
+## Pay and Attendance
+
+### What happens if I am late?
+
+Clock in through Kronos at the time clock. Being more than 7 minutes late counts as a late arrival. Five late arrivals in a rolling 90-day period lead to a documented conversation with your supervisor.
+
+### How do I report an absence?
+
+Call the site absence line at least 2 hours before your shift starts. Texts and messages to coworkers do not count as reporting an absence.

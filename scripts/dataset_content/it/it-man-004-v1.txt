@@ -1,0 +1,45 @@
+---
+title: Security Incident Response Runbook
+format: md
+access: confidential
+effective_date: 2025-01-20
+last_updated: 2025-07-14
+owner: IT Security
+tags: incident response, security, severity, ransomware, breach
+---
+## Purpose
+
+This runbook tells the IT Security team and on-call engineers how to respond to security incidents such as malware infections, compromised accounts and data breaches. It is confidential because it describes detection tools and escalation contacts.
+
+## Severity Levels
+
+| Severity | Example | Response time | Incident commander |
+|---|---|---|---|
+| SEV1 | Ransomware, active data breach, WMS outage caused by attack | 15 minutes | CISO or deputy |
+| SEV2 | Compromised admin account, malware on a server | 1 hour | Security Lead |
+| SEV3 | Compromised user account, malware on one laptop | 4 hours | On-call engineer |
+| SEV4 | Phishing email reported, policy violation | 1 business day | Service Desk |
+| SEV4 | Lost device without evidence of misuse | 1 business day | Service Desk |
+
+## Phases of Response
+
+1. Detect and triage: confirm the alert and assign a severity.
+2. Contain: isolate affected devices from the network and disable compromised accounts.
+3. Eradicate: remove malware, close the entry point and reset credentials.
+4. Recover: restore systems from clean backups and monitor for 72 hours.
+5. Lessons learned: hold a review within 5 business days of closing a SEV1 or SEV2 incident.
+
+## Ransomware Alerts
+
+An alert with code NX-9001 from the endpoint detection and response tool means possible ransomware behavior. Treat every NX-9001 alert as SEV1 until proven otherwise. Isolate the device immediately using the EDR console; do not power it off, because memory evidence would be lost.
+
+## Notifications
+
+- The CISO must be informed of every SEV1 and SEV2 incident by phone, not email.
+- Legal must be notified within 24 hours of any suspected breach of personal or customer data.
+- Customer notifications are approved by Legal and the COO only.
+- The Board is briefed by the CISO within 72 hours of a confirmed data breach.
+
+## Evidence Handling
+
+Collect logs, disk images and memory captures before rebuilding systems. Store evidence in the restricted evidence share and record a chain of custody for each item. Evidence is kept for at least 2 years.

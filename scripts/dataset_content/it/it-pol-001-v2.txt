@@ -1,0 +1,42 @@
+---
+title: Password and Authentication Standard
+format: docx
+access: internal
+effective_date: 2025-03-01
+last_updated: 2025-02-10
+owner: IT Security
+tags: passwords, MFA, authentication, password manager, security
+---
+## Purpose and Scope
+
+This standard sets the minimum rules for passwords and sign-in at Nimbus Logistics. It applies to every account that accesses Nimbus systems, including employee, contractor, service and administrator accounts. It supports the Acceptable Use Policy (IT-POL-002).
+
+## Password Requirements
+
+- Passwords must be at least 14 characters long. We recommend a passphrase of four or more unrelated words.
+- Complexity rules (forced symbols or numbers) no longer apply. Length matters more than complexity.
+- Passwords must not contain your name, username, "Nimbus" or the name of a site.
+- Passwords are checked against a list of known breached passwords and rejected if they appear on it.
+- Passwords do not expire on a schedule. You must change your password immediately if you suspect it has been exposed, or if IT Security asks you to.
+
+## Multi-Factor Authentication
+
+Multi-factor authentication (MFA) is required for all Nimbus systems, including email, Workday, the VPN, the warehouse management system and the Service Portal. Employees use push notifications in the Nimbus Authenticator app. SMS codes are allowed only as a temporary backup for 14 days while a replacement phone is set up.
+
+Administrators must use a hardware security key (YubiKey) for all privileged accounts. Push notifications are not accepted for admin sign-in.
+
+## Account Lockout
+
+After 10 failed sign-in attempts the account is locked for 30 minutes. Users can unlock it sooner through self-service reset at reset.nimbus.example or by calling the Service Desk at extension 4357.
+
+## Password Manager
+
+Using the company password manager, 1Password, is mandatory. Every employee receives a company vault. Work passwords must not be stored in browsers, spreadsheets, notes or personal password managers. Shared team credentials must be kept in a shared 1Password vault, never sent by email or chat.
+
+## Shared and Service Accounts
+
+Shared accounts are not allowed except for warehouse handheld scanners, which use device accounts managed by IT. Service account passwords must be at least 30 characters and rotated by the system owner every 12 months.
+
+## Exceptions and Enforcement
+
+Exceptions require written approval from IT Security and expire after 6 months. Breaking this standard may lead to disciplinary action. This version of IT-POL-001 replaces all earlier versions.

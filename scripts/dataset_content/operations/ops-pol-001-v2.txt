@@ -1,0 +1,41 @@
+---
+title: Warehouse Safety Policy
+format: pdf
+access: internal
+effective_date: 2025-02-01
+last_updated: 2025-01-22
+owner: Operations Safety
+tags: safety, forklift, PPE, incident reporting, warehouse
+---
+## Purpose and Scope
+
+This policy (OPS-POL-001) sets the safety rules for everyone who works in or visits the operational areas of a Nimbus Logistics distribution center, including employees, temporary workers, contractors and drivers. Site managers are responsible for enforcing it at their site.
+
+## Personal Protective Equipment
+
+- High-visibility vests must be worn at all times on the warehouse floor, in yards and at dock doors.
+- Safety boots with steel or composite toes are required on the warehouse floor.
+- Cut-resistant gloves are required when opening cartons, handling strapping or working at dock doors.
+- Hearing protection is required in areas marked with a blue sign, such as the conveyor sortation area.
+
+Nimbus provides all required PPE free of charge. Damaged PPE must be replaced before the start of a shift.
+
+## Powered Equipment and Forklifts
+
+Only certified operators may drive forklifts, reach trucks or electric pallet jacks. Forklift certification must be renewed every 2 years through the Nimbus training center, including a practical assessment. Operators must complete a pre-shift equipment checklist in the WMS before first use each day.
+
+The speed limit for all powered equipment is 4 mph inside buildings and 8 mph in yards. Pedestrians have right of way in marked walkways. Phones may not be used while driving powered equipment.
+
+## Reporting Incidents and Near Misses
+
+All injuries, equipment damage and spills must be reported to the shift supervisor immediately and recorded in the incident system within 4 hours. Near misses must also be reported within 4 hours; reporting near misses helps us prevent future injuries and is never grounds for discipline.
+
+Serious injuries requiring hospital treatment must be reported to the site manager and to Operations Safety by phone at once.
+
+## Safety Walks and Training
+
+Each site manager runs a weekly safety walk and records findings in the safety tracker. All site employees complete annual refresher safety training by January 31. New starters cannot work on the floor until they have completed the site safety induction.
+
+## Stop Work Authority
+
+Any employee may stop work that they believe is unsafe, without fear of retaliation. Work resumes only after a supervisor confirms that the hazard has been controlled. This version of OPS-POL-001 replaces all earlier versions.

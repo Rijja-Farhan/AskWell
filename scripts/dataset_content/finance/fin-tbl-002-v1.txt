@@ -1,0 +1,17 @@
+---
+title: Corporate Card Spending Limits
+format: csv
+access: internal
+effective_date: 2024-01-01
+last_updated: 2023-12-11
+owner: Finance Operations
+tags: corporate card, spending limits, grades
+---
+| Grade | Single transaction limit (USD) | Monthly limit (USD) | Cash withdrawal allowed |
+| G1-G2 | Not issued | Not issued | No |
+| G3 | 1000 | 2500 | No |
+| G4 | 1000 | 4000 | No |
+| G5 | 2000 | 5000 | No |
+| G6 | 4000 | 12000 | No |
+| G7 | 7500 | 25000 | No |
+| G8 and above | 10000 | 30000 | Yes, up to 1000 per month |

@@ -1,0 +1,41 @@
+---
+title: Workplace Investigations and Disciplinary Procedure
+format: docx
+access: confidential
+effective_date: 2024-06-01
+last_updated: 2024-05-15
+owner: HR Director
+tags: discipline, investigations, misconduct, appeals
+---
+## Purpose
+
+This procedure tells HR business partners and managers how to investigate workplace complaints and apply discipline consistently. It is confidential because it describes investigation methods and decision thresholds. It must not be shared with employees under investigation.
+
+## Starting an Investigation
+
+An HR business partner must open an investigation within 5 business days of receiving a complaint. The investigator must not report to the same manager as either party. Complaints involving a director or above are investigated by the HR Director or an external investigator.
+
+During an investigation, the employee may be placed on paid administrative suspension for up to 10 business days. Any extension needs written approval from the HR Director.
+
+## Progressive Discipline
+
+For most performance and conduct issues, Nimbus follows four steps:
+
+1. Verbal warning, documented in the employee file.
+2. Written warning.
+3. Final written warning.
+4. Termination of employment.
+
+Warnings stay active for 12 months. If no further issues occur in that period, the warning no longer counts toward the next step.
+
+## Gross Misconduct
+
+Some behavior can lead to immediate termination, skipping the earlier steps. Examples include theft of company or customer property, violence or threats, working under the influence of alcohol or drugs, falsifying time records, and deliberately disabling safety equipment such as forklift seat belts or dock locks.
+
+## Documentation and Confidentiality
+
+Investigators record interviews in the case management system within 24 hours. Witness names are shared only with people who need them to make a decision. Final reports are stored for 7 years.
+
+## Appeals
+
+An employee may appeal a written warning, final warning or termination within 7 calendar days of the decision. Appeals go to the HR Director, who will respond within 10 business days. The HR Director's decision is final. This procedure is document HR-POL-004.

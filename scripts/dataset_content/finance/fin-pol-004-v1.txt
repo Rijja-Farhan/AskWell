@@ -1,0 +1,40 @@
+---
+title: Supplier Payment Terms and Invoicing Guide
+format: pdf
+access: public
+effective_date: 2024-01-15
+last_updated: 2025-01-08
+owner: Accounts Payable
+tags: suppliers, payment terms, invoices, accounts payable
+---
+## Who This Guide Is For
+
+This guide (FIN-POL-004) is for suppliers and carriers who work with Nimbus Logistics. It explains our payment terms and what an invoice must include so that it can be paid on time. It is published on our supplier website.
+
+## Standard Payment Terms
+
+Our standard payment terms are net 45 days from the date we receive a valid invoice. Small businesses with annual sales to Nimbus below $500,000 are paid on net 30 days terms. Payment terms are confirmed in each purchase order.
+
+We offer an early payment option: suppliers who accept a 2% discount are paid within 10 days (2/10 net 45). Suppliers can sign up through the supplier portal.
+
+## What an Invoice Must Include
+
+- The Nimbus purchase order (PO) number.
+- Your legal company name, address and tax ID.
+- A unique invoice number and invoice date.
+- A description, quantity and unit price for each line, matching the PO.
+- The delivery site, for example the site code shown on the PO.
+
+Invoices without a valid PO number will be returned unpaid.
+
+## How to Submit Invoices
+
+Send invoices as PDF files to ap@nimbus.example, one invoice per PDF, or upload them in the supplier portal. Paper invoices sent by mail are processed more slowly and may delay payment.
+
+## Payment Methods
+
+Nimbus pays by ACH bank transfer. We never change bank details based on an email request alone. To change your bank details, contact your Nimbus buyer; Accounts Payable will verify the change by phone before it takes effect.
+
+## Disputes and Questions
+
+If an invoice is disputed, Accounts Payable will contact you within 5 business days of receiving it. Suppliers must raise any disagreement about a payment amount within 10 business days of payment. You can check the status of your invoices in the supplier portal or contact Accounts Payable at 1-800-555-0155.

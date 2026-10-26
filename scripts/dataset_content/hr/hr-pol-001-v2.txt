@@ -1,0 +1,49 @@
+---
+title: Remote and Hybrid Work Policy
+format: pdf
+access: internal
+effective_date: 2025-01-15
+last_updated: 2025-01-10
+owner: People Team
+tags: remote work, hybrid, flexibility, home office
+---
+## Purpose and Scope
+
+This policy explains how eligible Nimbus Logistics employees may work from home for part of the week. It applies to office-based employees at headquarters and at the regional offices attached to each distribution center. It does not apply to warehouse floor roles, drivers, dock staff or maintenance technicians, whose work must be done on site.
+
+Hybrid work is a privilege that depends on business needs. Managers may change or withdraw an arrangement with two weeks of written notice.
+
+## Eligibility
+
+- Employees must complete 60 days of continuous employment before requesting a hybrid arrangement.
+- The employee must have a performance rating of "Meets Expectations" or higher in the most recent review cycle.
+- The role must be classified as "hybrid eligible" in Workday. HR maintains the role list.
+
+## Remote Days and Anchor Days
+
+Eligible employees may work remotely up to 3 days per week. The remaining 2 days are worked in the office. Tuesday and Thursday are company anchor days: every hybrid employee is expected in the office on those days so that teams can plan meetings, training and collaboration.
+
+Core hours are 10:00 to 15:00 in the employee's local time zone. During core hours remote employees must be reachable by Teams and phone and must keep their calendar up to date.
+
+Unused remote days do not carry over to the next week.
+
+## Working From Another Country
+
+Employees may work from outside the United States for up to 10 working days per calendar year, provided the manager and HR approve the request at least 15 business days before travel. Longer stays create tax and immigration risks and are not permitted.
+
+## Equipment and Home Office Stipend
+
+Nimbus provides a laptop, headset and one external monitor. Employees approved for hybrid work receive a one-time home office stipend of $500, paid through payroll and coded to GL-6400. The stipend can be used for a desk, chair or lighting. Company equipment remains Nimbus property and must be returned when employment ends.
+
+Employees must work from a private, safe location and must follow the Acceptable Use Policy (IT-POL-002) and the Password and Authentication Standard (IT-POL-001), including using the VPN for all access to internal systems.
+
+## How to Request an Arrangement
+
+1. Discuss the request with your manager.
+2. Submit the "Hybrid Work Agreement" form in Workday.
+3. Your manager approves or declines within 10 business days.
+4. HR records the agreement and schedules a review after 6 months.
+
+## Related Documents
+
+This policy replaces all earlier versions of HR-POL-001. Questions can be sent to the People Team at people@nimbus.example.

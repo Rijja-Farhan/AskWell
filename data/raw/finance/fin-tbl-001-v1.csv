@@ -1,0 +1,12 @@
+GL account,Account name,Category,Example spend,Budget owner
+GL-2105,Accrued Freight,Liability,Carrier invoices not yet received,Finance Controller
+GL-6105,Travel - Airfare and Lodging,Travel,"Flights, hotels, rental cars",Department head
+GL-6110,Travel - Meals,Travel,Meals while traveling overnight,Department head
+GL-6115,Mileage and Ground Transport,Travel,"Personal car mileage, taxis, ride-share",Department head
+GL-6200,Office Supplies,General and administrative,"Paper, stationery, small office items",Department head
+GL-6310,IT Hardware,Technology,"Laptops, monitors, scanners",IT Director
+GL-6320,Software Subscriptions,Technology,"SaaS licenses, cloud services",IT Director
+GL-6400,Training and Education,People,"Courses, certifications, home office stipends",HR Director
+GL-7100,Fleet Maintenance,Operations,Truck and trailer repairs,Operations Manager
+GL-7150,Fuel,Operations,Diesel and forklift propane,Operations Manager
+GL-7200,Warehouse Equipment Repairs,Operations,"Conveyor, dock leveler and racking repairs",Operations Manager

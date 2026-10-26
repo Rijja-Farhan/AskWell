@@ -1,0 +1,53 @@
+---
+title: Procurement and Purchase Approval Policy
+format: pdf
+access: internal
+effective_date: 2024-05-01
+last_updated: 2025-03-20
+owner: Procurement
+tags: procurement, purchase orders, approvals, quotes, GL codes
+---
+## Purpose
+
+This policy (FIN-POL-002) makes sure that Nimbus Logistics buys goods and services at the right price, from approved suppliers and with the right approvals. It applies to all purchases except travel expenses, which follow the Travel and Expense Policy.
+
+## Purchase Orders
+
+A purchase order (PO) must be raised in the procurement system and approved before goods are ordered or services start. Suppliers are told not to deliver without a PO number. Invoices that arrive without a valid PO are returned to the supplier and are not paid.
+
+## Approval Thresholds
+
+| Total purchase value | Approver |
+|---|---|
+| Under $5,000 | Budget-holding manager |
+| $5,000 to $25,000 | Department head |
+| $25,000 to $100,000 | CFO |
+| Over $100,000 | CFO and CEO |
+| Any value, new supplier | Procurement team review first |
+
+Purchases may not be split into smaller orders to avoid a higher approval level. Splitting purchases is treated as a breach of this policy.
+
+## Competitive Quotes
+
+For purchases above $25,000, at least three written quotes are required. The reasons for choosing a supplier must be recorded in the procurement system. A single-source purchase above $25,000 needs a written justification approved by the CFO.
+
+## Coding Purchases
+
+Each PO line must be coded to the correct general ledger (GL) account so budgets are tracked accurately:
+
+- GL-6200 Office Supplies
+- GL-6310 IT Hardware, including laptops and scanners
+- GL-6320 Software Subscriptions
+- GL-6400 Training and Education
+- GL-7100 Fleet Maintenance
+- GL-7200 Warehouse Equipment Repairs
+
+If you are unsure which account to use, check the Chart of Accounts or ask the Finance team.
+
+## Corporate Cards
+
+Corporate cards may be used for purchases under $1,000 from suppliers that do not accept POs. Card spending limits by grade are set in the Corporate Card Spending Limits table. Card purchases follow the same coding rules.
+
+## Conflicts of Interest
+
+Employees must not take part in choosing a supplier in which they or their family have a financial interest. Such interests must be disclosed under the Code of Business Conduct.

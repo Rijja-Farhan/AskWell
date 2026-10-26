@@ -1,0 +1,41 @@
+---
+title: Guest Wi-Fi and Visitor Technology Guide
+format: md
+access: public
+effective_date: 2024-05-01
+last_updated: 2025-03-03
+owner: IT Infrastructure
+tags: guest wifi, visitors, meeting rooms, presentations
+---
+## Who This Guide Is For
+
+This guide is for visitors, customers, auditors and suppliers who come to a Nimbus Logistics office or distribution center. It explains how to get online and how to present in our meeting rooms. Nimbus employees can share it with their guests.
+
+## Connecting to Guest Wi-Fi
+
+Guest Wi-Fi is available at every Nimbus office and distribution center.
+
+1. Ask reception for a guest Wi-Fi voucher. You will need to show photo ID and the name of your Nimbus host.
+2. Connect to the network named Nimbus-Guest.
+3. Open a browser, enter the voucher code and accept the terms of use.
+
+Each voucher is valid for 24 hours and for up to 3 devices. Hosts can request vouchers valid for up to 5 days for auditors or contractors on longer visits.
+
+## What Guest Wi-Fi Can and Cannot Do
+
+- Guest Wi-Fi gives internet access only. It cannot reach Nimbus internal systems, printers or warehouse equipment.
+- Speed is limited to 25 Mbps per device, which is enough for video calls.
+- File sharing between guest devices is blocked.
+- Illegal downloads and peer-to-peer file sharing are blocked and logged.
+
+## Presenting in Meeting Rooms
+
+Meeting rooms have a screen with an HDMI cable and a wireless presentation hub. To present wirelessly, connect to Nimbus-Guest and enter the code shown on the room screen. Rooms are named after the site code and room, for example "WH-DAL-01 Training Room".
+
+## Rules for Visitors
+
+Visitors must not plug USB drives, cables or other devices into Nimbus computers, scanners or network ports. Photography of warehouse operations, screens or whiteboards is not allowed without permission from your host. On the warehouse floor, follow the instructions in the Visitor and Site Access Policy.
+
+## Getting Help
+
+If you have trouble connecting, ask reception or your host. Your host can contact the Nimbus IT Service Desk on your behalf.

@@ -1,0 +1,8 @@
+Grade,Single transaction limit (USD),Monthly limit (USD),Cash withdrawal allowed
+G1-G2,Not issued,Not issued,No
+G3,1000,2500,No
+G4,1500,5000,No
+G5,2500,7500,No
+G6,5000,15000,No
+G7,7500,25000,No
+G8 and above,10000,40000,"Yes, up to 500 per month"

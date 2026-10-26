@@ -1,0 +1,48 @@
+NIMBUS LOGISTICS
+MONTH-END CLOSE MEETING - OCTOBER 2025
+Document code: FIN-MTG-002 · Version 1 · Effective date: 2025-11-05 · Owner: Finance Controller · Classification: Confidential
+========================================================================
+
+Meeting Details
+---------------
+
+Date: 2025-11-05. Chair: Leo Brandt (Finance Controller). Attendees: Tom Becker (Finance Analyst), Accounts Payable lead, Accounts Receivable lead, Payroll lead. Review of the October 2025 close.
+
+Close Timeline
+--------------
+
+The October close was completed on business day 6, one day later than the target of 5 business days. The delay came from late carrier invoices for the WH-DAL-02 recovery effort after the conveyor outage.
+
+Accruals
+--------
+
+Accrued freight in GL-2105 was $2.4 million at month-end, $600,000 higher than September because several carriers invoiced late. Tom will review the freight accrual method so that it uses shipment data from the WMS instead of the previous month's invoices.
+
+Overtime accruals for the Dallas sites increased by $310,000 due to the outage recovery.
+
+Bad Debt Write-Off
+------------------
+
+The committee approved writing off $84,300 owed by a retail customer that entered bankruptcy in September. The amount was already fully provided for, so there is no impact on October profit.
+
+Expense Coding Issues
+---------------------
+
+The audit of September expense claims found that 11% of meal expenses were coded to GL-6105 instead of GL-6110. Finance Operations will send a reminder to all employees and update the expense type mapping in Concur.
+
+Cash and Payables
+-----------------
+
+Days payable outstanding rose to 47 days, slightly above the standard net 45 terms, because invoices without PO numbers were returned to suppliers. Accounts Payable will remind buyers that every purchase needs an approved PO before ordering, as required by the procurement policy.
+
+Audit Preparation
+-----------------
+
+The external auditor will start year-end fieldwork in January 2026. Each team lead must confirm their account reconciliations for November by 2025-12-10.
+
+Action Items
+------------
+
+- Tom: new freight accrual method ready for the November close.
+- Accounts Payable lead: chase all carriers for October invoices by 2025-11-12.
+- Payroll lead: confirm peak season overtime forecast by 2025-11-14.

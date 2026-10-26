@@ -1,0 +1,46 @@
+---
+title: Laptop Provisioning and Replacement Manual
+format: md
+access: internal
+effective_date: 2024-10-01
+last_updated: 2025-05-30
+owner: IT End User Services
+tags: laptops, provisioning, Autopilot, replacement, hardware
+---
+## Purpose
+
+This manual explains how IT provides, replaces and collects laptops for Nimbus employees. It is written for IT staff and for managers who order equipment for new hires.
+
+## Standard Devices
+
+| Role group | Standard device | Accessories |
+|---|---|---|
+| Office staff | Dell Latitude 7450 | Dock, headset, one monitor |
+| Engineers and analysts | Dell Precision 5690 | Dock, headset, two monitors |
+| Warehouse supervisors | Panasonic Toughbook 40 | Vehicle charger, rugged case |
+| Executives | Dell Latitude 9450 | Dock, headset, one monitor |
+| Contractors | Dell Latitude 5450 | Headset |
+
+Non-standard devices need approval from the IT Director and are charged to the requesting department under GL-6310.
+
+## Ordering a Laptop for a New Hire
+
+1. The hiring manager raises a "New Hire Equipment" request in the Service Portal at least 10 business days before the start date.
+2. IT assigns a device from stock and registers it in Windows Autopilot.
+3. On the first day, the new hire signs in and Autopilot installs apps and policies. Enrollment takes about 45 minutes, so new hires should start it before their induction session.
+
+## Security Configuration
+
+Every laptop is encrypted with BitLocker, enrolled in endpoint detection and response, and managed through Intune. Local administrator rights are not given to users. USB storage is blocked as described in IT-POL-002.
+
+## Replacement Cycle
+
+Laptops are replaced every 4 years, or earlier if a repair would cost more than 50% of a new device. IT sends a replacement notice 30 days before the refresh date. Rugged devices for warehouse supervisors are replaced every 3 years because of heavier wear.
+
+## Returning Old Devices
+
+Old laptops must be returned to IT within 10 business days of receiving the replacement. Devices from leavers must be returned on the last day of work. IT wipes returned devices using a certified data erasure process before reuse or recycling.
+
+## Lost or Damaged Devices
+
+Report a lost or stolen device to the Service Desk at extension 4357 within 1 hour. Accidental damage is repaired at no cost to the employee for the first incident each year. A second incident in the same year needs manager approval before repair.

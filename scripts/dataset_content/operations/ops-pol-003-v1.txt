@@ -1,0 +1,38 @@
+---
+title: Visitor and Site Access Policy
+format: pdf
+access: public
+effective_date: 2024-03-01
+last_updated: 2025-02-14
+owner: Operations
+tags: visitors, site access, safety briefing, deliveries, photography
+---
+## Purpose
+
+This policy (OPS-POL-003) explains the rules for visitors, customers, auditors, suppliers and delivery drivers at Nimbus Logistics distribution centers. It is shared with everyone before their visit so they know what to expect.
+
+## Before You Arrive
+
+Visits must be arranged in advance by a Nimbus host. Visiting hours are 8:00 to 17:00, Monday to Friday, unless the host has arranged otherwise with the site manager. Please bring a government-issued photo ID; visitors without photo ID cannot enter.
+
+## Signing In
+
+- All visitors sign in at reception or the security gate and receive a visitor badge.
+- The badge must be visible at all times and returned when leaving.
+- Visitors must be escorted by their host at all times inside operational areas.
+
+## Safety on Site
+
+Before entering the warehouse floor, every visitor watches a 10-minute safety briefing. Nimbus provides a high-visibility vest and, where required, safety glasses. Visitors must wear closed-toe shoes; sandals and high heels are not allowed on the warehouse floor. Stay within marked pedestrian walkways and follow the instructions of your host and of site staff.
+
+## Photography and Confidentiality
+
+Photography and video recording are not allowed on the warehouse floor, in yards or at dock doors without written permission from the site manager. Information about customers, shipments and stock that visitors see during a visit is confidential.
+
+## Deliveries and Drivers
+
+Carriers and suppliers delivering goods must book a dock appointment through the dock scheduling portal at least 24 hours in advance. Drivers without an appointment may be turned away or asked to wait. Drivers must stay in the driver waiting area while their vehicle is being loaded or unloaded unless a dock supervisor asks them to help.
+
+## Emergencies
+
+If an alarm sounds, follow your host to the nearest assembly point. Do not use elevators. Your host will make sure you are counted during the evacuation.

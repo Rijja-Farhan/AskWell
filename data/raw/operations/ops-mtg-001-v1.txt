@@ -1,0 +1,36 @@
+NIMBUS LOGISTICS
+WEEKLY OPERATIONS REVIEW - DALLAS SITES
+Document code: OPS-MTG-001 · Version 1 · Effective date: 2025-10-20 · Owner: Operations · Classification: Internal
+========================================================================
+
+Meeting Details
+---------------
+
+Date: 2025-10-20. Chair: Ava Chen (Operations Manager). Attendees: Elena Ruiz (Shift Supervisor, WH-DAL-02), site manager for WH-DAL-01, transportation planning lead, Marcus Lee (IT). Weekly review of the two Dallas sites.
+
+Performance Last Week
+---------------------
+
+WH-DAL-01 shipped 41,200 orders with an on-time rate of 96.2%, above the 95% target. Dock-to-stock time averaged 5.1 hours.
+
+WH-DAL-02 shipped 28,900 orders with an on-time rate of 91.4%, below target. The main cause was a 3-hour conveyor control outage on 2025-10-14 that delayed the evening cut-off. Dock-to-stock time averaged 7.8 hours, above the 6-hour target, because of a backlog after the outage.
+
+Issues
+------
+
+- Dock door 7 at WH-DAL-02 has a damaged leveler and is out of service. Repair is booked for 2025-10-27. Until then, inbound appointments are reduced by four per day.
+- Several scanners at WH-DAL-02 show error NX-3305 when reading labels from one supplier. The supplier's labels are printed too small. Purchasing will contact the supplier.
+- Two near misses involving pallet jacks were reported at WH-DAL-01. Both were in the same aisle, where the walkway marking has faded.
+
+Peak Season Staffing
+--------------------
+
+Peak starts on November 20. WH-DAL-01 will add 18 temporary associates and WH-DAL-02 will add 12. Temporary associates start on 2025-11-10 to allow time for safety induction and scanner training. Overtime plans will be shared with associates by 2025-11-13.
+
+Action Items
+------------
+
+- Elena: recover WH-DAL-02 on-time rate to 95% by the end of October.
+- WH-DAL-01 site manager: repaint the walkway markings in aisle 14 by 2025-10-24.
+- Marcus: confirm conveyor firmware changes go through the Change Advisory Board.
+- Transportation lead: review the evening cut-off at WH-DAL-02 with SwiftFreight.

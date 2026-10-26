@@ -1,0 +1,35 @@
+# Privileged Access and Break-Glass Procedure
+
+_Document code: IT-MAN-005 · Version 1 · Effective date: 2025-02-15 · Owner: IT Security · Classification: Restricted_
+
+## Purpose
+
+This procedure controls how administrator access is granted and how emergency "break-glass" accounts are used when normal sign-in is unavailable. It is restricted to the IT Security team and executives because it describes how to bypass normal controls.
+
+## Just-in-Time Admin Access
+
+Administrators do not hold permanent admin rights. Admin access is requested through the privileged access management (PAM) tool and granted for a maximum of 4 hours. Each request needs approval from a second administrator. All admin sessions are recorded by the PAM tool, and recordings are kept for 1 year.
+
+## Break-Glass Accounts
+
+Nimbus maintains two break-glass accounts, named nx-bg-01 and nx-bg-02. They are excluded from MFA so that they work if the identity provider fails. Their passwords are split into two halves, sealed in envelopes and stored in the fire safe at headquarters in Dallas.
+
+## Using a Break-Glass Account
+
+1. Confirm that normal admin access is unavailable, for example because of an identity provider outage.
+2. Obtain approval from two people: the CISO and the IT Director. If one is unreachable, the COO can approve instead.
+3. Retrieve both envelopes from the safe, recording the time and your name in the safe log.
+4. Use the account only for the actions needed to restore normal access.
+5. Sign out and inform IT Security as soon as the work is done.
+
+## After Use
+
+Passwords for a break-glass account are rotated within 24 hours of every use. IT Security reviews all actions taken with the account within 24 hours and reports to the CISO. Any use without the two approvals is treated as a SEV2 security incident.
+
+## Testing
+
+Break-glass accounts are tested every 6 months during a planned maintenance window. The test confirms that both accounts can sign in and that alerts fire on use.
+
+## Review
+
+This procedure is reviewed every year by the CISO. Changes must be approved by the IT Director and the CISO.

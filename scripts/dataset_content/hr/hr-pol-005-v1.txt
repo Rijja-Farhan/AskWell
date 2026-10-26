@@ -1,0 +1,36 @@
+---
+title: Parental Leave Policy
+format: pdf
+access: public
+effective_date: 2024-07-01
+last_updated: 2024-06-12
+owner: People Team
+tags: parental leave, family, benefits, return to work
+---
+## Overview
+
+Nimbus Logistics supports employees when they welcome a new child through birth, adoption or foster placement. This policy (HR-POL-005) is published on our careers website so candidates can see our family benefits.
+
+## Eligibility
+
+Employees become eligible for paid parental leave after 6 months of continuous employment. The leave must start within 12 months of the child's birth or placement. The policy applies equally to all parents, regardless of gender.
+
+## Paid Leave Amounts
+
+- Primary caregivers receive 16 weeks of paid leave at 100% of base pay.
+- Secondary caregivers receive 6 weeks of paid leave at 100% of base pay.
+- Leave can be taken in one block or split into up to two blocks, each at least 2 weeks long.
+
+Paid parental leave runs at the same time as any leave provided by the Family and Medical Leave Act (FMLA) or state programs. If a state benefit pays part of the employee's wage, Nimbus pays the difference so that the employee receives full base pay.
+
+## Phased Return to Work
+
+After primary caregiver leave, employees can choose a phased return: for 4 weeks they work a 60% schedule while receiving full pay. Warehouse and transportation employees can arrange a fixed shift pattern during the phased return, agreed with their site manager.
+
+## Benefits During Leave
+
+Health, dental and vision coverage continue during leave, and Nimbus continues to pay its share of premiums. PTO and sick leave continue to accrue. The employee returns to the same job or an equivalent job at the same pay.
+
+## How to Apply
+
+Tell your manager and submit a leave request in Workday at least 30 days before the expected start date, or as soon as possible for unexpected placements. The People Team will confirm the leave dates and pay within 5 business days. Questions can be sent to leave@nimbus.example.

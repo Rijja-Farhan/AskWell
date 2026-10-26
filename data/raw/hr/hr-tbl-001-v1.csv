@@ -1,0 +1,11 @@
+Grade,Example roles,Minimum (USD),Midpoint (USD),Maximum (USD),Annual bonus target
+G1,Warehouse Associate; Dock Associate,38000,42000,47000,0%
+G2,Lead Associate; Driver,44000,50000,56000,0%
+G3,Coordinator; Service Desk Analyst,52000,59000,66000,5%
+G4,Supervisor; HR Generalist; Accountant,60000,69000,78000,7%
+G5,Senior Analyst; Systems Engineer,72000,83000,94000,10%
+G6,Site Manager; Finance Manager,88000,101000,114000,12%
+G7,Senior Manager; Security Lead,105000,121000,137000,15%
+G8,Director,130000,150000,170000,20%
+G9,Vice President,165000,190000,215000,30%
+G10,Executive Officer,210000,245000,280000,40%
