@@ -62,6 +62,7 @@ class ChatResponse(BaseModel):
     latency_ms: int
     session_id: str | None = None
     standalone_query: str | None = None  # the query retrieval used, when memory applied
+    cached: bool = False  # the answer came from the answer cache (no LLM call)
 
 
 class TurnOut(BaseModel):
@@ -135,6 +136,7 @@ def to_response(
     latency_ms: int,
     session_id: str | None = None,
     standalone_query: str | None = None,
+    cached: bool = False,
 ) -> ChatResponse:
     return ChatResponse(
         answer=answer.answer,
@@ -147,4 +149,5 @@ def to_response(
         latency_ms=latency_ms,
         session_id=session_id,
         standalone_query=standalone_query,
+        cached=cached,
     )

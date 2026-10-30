@@ -8,6 +8,7 @@ error, 2 setup problem (API key or index), 3 provider unavailable after retries.
 
 import argparse
 import sys
+import time
 from datetime import date
 from pathlib import Path
 from typing import get_args
@@ -19,12 +20,12 @@ import openai  # noqa: E402
 
 from app.config import get_settings  # noqa: E402
 from app.dataset.schemas import Department  # noqa: E402
-from app.rag.answer import answer_from_chunks, empty_question_answer  # noqa: E402
+from app.rag.answer import empty_question_answer  # noqa: E402
+from app.rag.cache import CacheBundle, cached_answer, cached_retrieve  # noqa: E402
 from app.rag.errors import IndexNotReadyError, MissingAPIKeyError  # noqa: E402
 from app.rag.filters import RetrievalFilter, VersionPolicy, effective_policy  # noqa: E402
 from app.rag.llm import get_embedder, get_llm  # noqa: E402
 from app.rag.rerank import get_reranker  # noqa: E402
-from app.rag.retrieve import retrieve  # noqa: E402
 from app.rag.sanitize import prepare_question  # noqa: E402
 
 UNAVAILABLE = (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError)
@@ -50,6 +51,9 @@ def main() -> int:
         choices=get_args(VersionPolicy),
         help=f"default {settings.version_policy}",
     )
+    parser.add_argument(
+        "--repeat", type=int, default=1, help="ask N times in this process (shows the warm cache)"
+    )
     args = parser.parse_args()
     filters = RetrievalFilter(
         departments=args.department, as_of=args.as_of, version_policy=args.version_policy
@@ -60,15 +64,29 @@ def main() -> int:
         embedder = get_embedder(settings)
         llm = get_llm(settings)
         reranker = get_reranker(settings)
-        if settings.injection_defense and not clean.text:  # nothing but an attack
-            chunks = []
-            result = empty_question_answer(clean.text, settings)
-        else:
-            chunks = retrieve(clean.text, args.k, embedder, settings, reranker, filters)
-            if not chunks and settings.answer_mode == "baseline":
-                print("No document matches these filters, so there is nothing to answer from.")
-                return 0
-            result = answer_from_chunks(clean.text, chunks, llm, settings)
+        caches = CacheBundle.from_settings(settings)  # per process: warm only with --repeat
+        for attempt in range(1, max(args.repeat, 1) + 1):
+            began = time.perf_counter()
+            if settings.injection_defense and not clean.text:  # nothing but an attack
+                chunks = []
+                result = empty_question_answer(clean.text, settings)
+                hit = False
+            else:
+                retrieval = cached_retrieve(
+                    clean.text, args.k, embedder, settings, caches, reranker, filters
+                )
+                chunks = retrieval.chunks
+                if not chunks and settings.answer_mode == "baseline":
+                    print("No document matches these filters, so there is nothing to answer from.")
+                    return 0
+                result, hit = cached_answer(clean.text, retrieval, llm, settings, caches)
+            if args.repeat > 1:
+                took = (time.perf_counter() - began) * 1000
+                print(
+                    f"[ask {attempt}/{args.repeat}: {took:.0f} ms, "
+                    f"{'cache hit' if hit else 'cache miss'}]",
+                    file=sys.stderr,
+                )
     except (MissingAPIKeyError, IndexNotReadyError) as exc:
         print(exc, file=sys.stderr)
         return 2

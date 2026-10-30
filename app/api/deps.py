@@ -14,6 +14,7 @@ from fastapi import Request
 from app.config import Settings
 from app.dataset.schemas import UserProfile
 from app.rag.access import GUEST, load_users
+from app.rag.cache import CacheBundle
 from app.rag.embeddings import Embedder
 from app.rag.llm import LLM, get_embedder, get_llm
 from app.rag.memory import InMemorySessionStore, ScopedSessionStore, SessionStore
@@ -106,6 +107,7 @@ class Deps:
     gate: IndexGate = field(default_factory=IndexGate)
     sessions: SessionStore | None = None
     users: dict[str, UserProfile] | None = None
+    caches: CacheBundle | None = None
     _reranker_ready: bool = field(default=False, repr=False)
     _build_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -132,6 +134,14 @@ class Deps:
                 self.reranker = get_reranker(self.settings)  # None when RERANKER=none
                 self._reranker_ready = True
             return self.reranker
+
+    def get_caches(self) -> CacheBundle:
+        """The embedding, retrieval and answer caches, built once from the settings (tests
+        may pass their own, or `CacheBundle.disabled()`)."""
+        with self._build_lock:
+            if self.caches is None:
+                self.caches = CacheBundle.from_settings(self.settings)
+            return self.caches
 
     def get_users(self) -> dict[str, UserProfile]:
         """Profiles by id, loaded once. A missing or invalid users file fails closed: no

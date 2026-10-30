@@ -102,6 +102,15 @@ class Settings(BaseSettings):
     injection_defense: bool = True
     max_question_chars: int = 2000
 
+    # Caching (Phase 14): in-process LRU caches for query embeddings, retrieval results and final
+    # answers. Invalidation is by index fingerprint; the TTL is only a safety net.
+    # cache_enabled=false makes every layer a pass-through (the Phase 13 behaviour).
+    cache_enabled: bool = True
+    cache_embedding_entries: int = 2048
+    cache_retrieval_entries: int = 512
+    cache_answer_entries: int = 256
+    cache_ttl_seconds: int = 3600
+
     # API server: bind address and CORS origins (comma list; empty disables CORS)
     api_host: str = "127.0.0.1"
     api_port: int = 8000

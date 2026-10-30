@@ -39,12 +39,18 @@ from app.api.schemas import (
 )
 from app.config import Settings, get_settings
 from app.dataset.schemas import UserProfile
-from app.rag.answer import Answer, answer_from_chunks, empty_question_answer, stream_answer
+from app.rag.answer import Answer, empty_question_answer, stream_answer
+from app.rag.cache import (
+    answer_key,
+    cached_answer,
+    cached_retrieve,
+    lookup_answer,
+    store_answer,
+)
 from app.rag.conversation import memory_active, record_turn, standalone_query
 from app.rag.errors import CorpusParseError, IndexNotReadyError, MissingAPIKeyError
 from app.rag.filters import RetrievalFilter
 from app.rag.ingest import ingest_corpus
-from app.rag.retrieve import retrieve
 from app.rag.sanitize import prepare_question
 from app.rag.store import REPO_ROOT, SyncStats, open_collection
 
@@ -117,6 +123,18 @@ def filters_from(req: ChatRequest, user: UserProfile | None = None) -> Retrieval
     return RetrievalFilter(
         departments=req.departments, as_of=req.as_of, version_policy=req.version_policy, user=user
     )
+
+
+REPLAY_CHARS = 24
+
+
+def replay(answer: Answer) -> Iterator[str | Answer]:
+    """A cached answer as the stream would have produced it: text pieces, then the Answer.
+    Refusals stream no text (as in `stream_answer`)."""
+    if not answer.refused:
+        for i in range(0, len(answer.answer), REPLAY_CHARS):
+            yield answer.answer[i : i + REPLAY_CHARS]
+    yield answer
 
 
 def valid_session_id(value: str) -> bool:
@@ -193,7 +211,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
     # Health
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok"}
+        return {"status": "ok", "cache": deps.get_caches().stats()}
 
     @app.get("/health/ready", response_model=ReadyResponse)
     def ready():
@@ -252,18 +270,22 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
             answer = empty_question_answer(clean.text, settings)
             return to_response(answer, req.include_text, elapsed_ms(start), session_id, None)
         embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
+        caches = deps.get_caches()
         with deps.gate.read():
             query = standalone_query(clean.text, session_id, sessions, llm, settings)
-            chunks = retrieve(
+            retrieval = cached_retrieve(
                 query or clean.text,
                 req.k or settings.retrieval_top_k,
                 embedder,
                 settings,
+                caches,
                 reranker,
                 access_filter(req, user),
+                user,
             )
+            chunks = retrieval.chunks
             # the answer step sees the original question, never the history
-            answer = answer_from_chunks(clean.text, chunks, llm, settings)
+            answer, cached = cached_answer(clean.text, retrieval, llm, settings, caches)
         record_turn(sessions, session_id, clean.text, query, answer)
         log.info(
             "chat user=%s chunks=%d refused=%s removed=%d",
@@ -272,7 +294,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
             answer.refused,
             clean.removed,
         )
-        return to_response(answer, req.include_text, elapsed_ms(start), session_id, query)
+        return to_response(answer, req.include_text, elapsed_ms(start), session_id, query, cached)
 
     @app.post("/chat/stream")
     def chat_stream(req: ChatRequest, user: CurrentUser):
@@ -299,17 +321,23 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
             )
         embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
+        caches = deps.get_caches()
         lease = deps.gate.acquire_read()
         try:  # retrieval errors are still plain HTTP errors: nothing has been sent yet
             query = standalone_query(clean.text, session_id, sessions, llm, settings)
-            chunks = retrieve(
+            retrieval = cached_retrieve(
                 query or clean.text,
                 req.k or settings.retrieval_top_k,
                 embedder,
                 settings,
+                caches,
                 reranker,
                 access_filter(req, user),
+                user,
             )
+            chunks = retrieval.chunks
+            key = answer_key(retrieval.key, clean.text, chunks, settings) if caches.enabled else ""
+            hit = lookup_answer(caches, key)
         except BaseException:
             lease.release()
             raise
@@ -323,12 +351,24 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                         "standalone_query": query,
                     },
                 )
-                for item in stream_answer(clean.text, chunks, llm, settings):
+                items = (
+                    replay(hit)
+                    if hit is not None
+                    else stream_answer(clean.text, chunks, llm, settings)
+                )
+                for item in items:
                     if isinstance(item, Answer):
+                        if hit is None:
+                            store_answer(caches, key, item)
                         done = sse(
                             "done",
                             to_response(
-                                item, req.include_text, elapsed_ms(start), session_id, query
+                                item,
+                                req.include_text,
+                                elapsed_ms(start),
+                                session_id,
+                                query,
+                                hit is not None,
                             ),
                         )
                         record_turn(sessions, session_id, clean.text, query, item)
@@ -377,9 +417,11 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
         if not deps.gate.begin_ingest():
             raise IngestBusyError
         try:
-            return ingest_corpus(
+            stats = ingest_corpus(
                 REPO_ROOT, deps.get_embedder, settings, full=body.full if body else False
             )
+            deps.get_caches().clear()  # belt and braces: the index fingerprint already changed
+            return stats
         finally:
             deps.gate.end_ingest()
 

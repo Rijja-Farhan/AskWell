@@ -13,6 +13,7 @@ from pydantic import SecretStr
 from app.api import main as api_main
 from app.api.deps import Deps
 from app.api.main import create_app
+from app.rag import cache as cache_module
 from app.rag import rerank
 from app.rag.answer import REFUSAL_TEXT
 from app.rag.errors import CorpusParseError
@@ -78,7 +79,9 @@ def provider_error(cls, status, headers=None):
 
 def test_health(client):
     r = client.get("/health")
-    assert r.status_code == 200 and r.json() == {"status": "ok"}
+    body = r.json()
+    assert r.status_code == 200 and body["status"] == "ok"
+    assert set(body["cache"]) == {"embeddings", "retrieval", "answers"}
 
 
 def test_ready_200(index_settings):
@@ -201,7 +204,8 @@ def test_unknown_route_uses_error_body(client):
 
 def test_stream_event_order_and_done_matches_chat(index_settings):
     reply = "Twenty days [1]. Also [2]."
-    client, llm = make_client(index_settings, reply)
+    # caching off: the second request below must reach the LLM again (cache tests: test_cache.py)
+    client, llm = make_client(index_settings.model_copy(update={"cache_enabled": False}), reply)
     r = client.post("/chat/stream", json={"question": QUESTION, "k": 3})
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
     events = parse_sse(r.text)
@@ -446,7 +450,7 @@ def test_create_app_loads_no_reranker_and_needs_no_key(monkeypatch, tmp_path):
     assert app.title == "Askwell"
     assert TestClient(app).get("/health").status_code == 200  # no lifespan: nothing built
     with TestClient(app) as started:  # lifespan warm-up failures are logged, not fatal
-        assert started.get("/health").json() == {"status": "ok"}
+        assert started.get("/health").json()["status"] == "ok"
 
 
 def test_module_level_app_exists():
@@ -523,9 +527,9 @@ def test_chat_with_session_rewrites_follow_up_and_stores_turns(index_settings):
 
 def test_retrieval_uses_standalone_query(index_settings, monkeypatch):
     seen = []
-    real = api_main.retrieve
+    real = cache_module.retrieve
     monkeypatch.setattr(
-        api_main, "retrieve", lambda q, *a, **kw: seen.append(q) or real(q, *a, **kw)
+        cache_module, "retrieve", lambda q, *a, **kw: seen.append(q) or real(q, *a, **kw)
     )
     client, _ = make_client(index_settings, llm=ScriptedLLM(rewrite="parental leave weeks"))
     two_turns(client)

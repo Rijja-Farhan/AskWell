@@ -1,0 +1,68 @@
+{
+  "passed": true,
+  "mode": "hybrid",
+  "delay_ms": 50.0,
+  "questions": 10,
+  "median_ms": {
+    "cold": {
+      "total": 185.017,
+      "retrieval": 129.91,
+      "answer": 52.353,
+      "embedding": 50.209
+    },
+    "warm": {
+      "total": 2.216,
+      "retrieval": 0.212,
+      "answer": 0.18,
+      "embedding": 0.0
+    }
+  },
+  "speedup": {
+    "total": 83.5,
+    "retrieval": 612.8,
+    "answer": 290.9,
+    "embedding": null
+  },
+  "calls": {
+    "cold": {
+      "embedder": 10,
+      "llm": 10
+    },
+    "warm": {
+      "embedder": 0,
+      "llm": 0
+    }
+  },
+  "cache_stats": {
+    "embeddings": {
+      "hits": 0,
+      "misses": 10,
+      "size": 10
+    },
+    "retrieval": {
+      "hits": 10,
+      "misses": 10,
+      "size": 10
+    },
+    "answers": {
+      "hits": 10,
+      "misses": 10,
+      "size": 10
+    }
+  },
+  "index_fingerprint_median_ms": 15.128,
+  "checks": {
+    "warm_answers_identical": true,
+    "cold_not_cached_warm_cached": true,
+    "warm_made_no_embedder_or_llm_call": true,
+    "warm_total_at_least_5x_faster": true,
+    "warm_retrieval_at_least_5x_faster": true,
+    "warm_answer_at_least_5x_faster": true,
+    "ingest_updated_the_document": true,
+    "fingerprint_changed": true,
+    "miss_after_ingest": true,
+    "new_content_after_ingest": true,
+    "rewarmed_after_ingest": true,
+    "users_do_not_share": true
+  }
+}
