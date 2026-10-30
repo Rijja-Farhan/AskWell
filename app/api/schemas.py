@@ -54,7 +54,7 @@ class SourceWithText(Source):
 class ChatResponse(BaseModel):
     answer: str
     refused: bool
-    refusal_reason: Literal["no_context", "low_score", "model"] | None
+    refusal_reason: Literal["no_context", "low_score", "model", "blocked"] | None
     citations: list[Citation]
     invalid_citations: int
     sources: list[SerializeAsAny[Source]]

@@ -95,6 +95,13 @@ class Settings(BaseSettings):
     # read (see app/rag/access.py). false disables filtering (eval comparison, legacy tests).
     rbac_enabled: bool = True
 
+    # Prompt-injection defense (Phase 13): sanitize questions, neutralize retrieved text, wrap
+    # untrusted text in delimiters under a hardened prompt, guard the output. false restores the
+    # exact pre-Phase-13 prompts and inputs (eval comparison, legacy tests). Questions are cut
+    # to max_question_chars before anything else.
+    injection_defense: bool = True
+    max_question_chars: int = 2000
+
     # API server: bind address and CORS origins (comma list; empty disables CORS)
     api_host: str = "127.0.0.1"
     api_port: int = 8000

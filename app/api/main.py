@@ -39,12 +39,13 @@ from app.api.schemas import (
 )
 from app.config import Settings, get_settings
 from app.dataset.schemas import UserProfile
-from app.rag.answer import Answer, answer_from_chunks, stream_answer
+from app.rag.answer import Answer, answer_from_chunks, empty_question_answer, stream_answer
 from app.rag.conversation import memory_active, record_turn, standalone_query
 from app.rag.errors import CorpusParseError, IndexNotReadyError, MissingAPIKeyError
 from app.rag.filters import RetrievalFilter
 from app.rag.ingest import ingest_corpus
 from app.rag.retrieve import retrieve
+from app.rag.sanitize import prepare_question
 from app.rag.store import REPO_ROOT, SyncStats, open_collection
 
 log = logging.getLogger("askwell.api")
@@ -244,12 +245,17 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
     def chat(req: ChatRequest, user: CurrentUser) -> ChatResponse:
         start = time.perf_counter()
         sessions = deps.sessions_for(user)
-        embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
         session_id = session_for(req)
+        clean = prepare_question(req.question, settings)  # every later step sees only this
+        if settings.injection_defense and not clean.text:  # nothing but an attack
+            log.info("chat user=%s pure-attack removed=%d", user.user_id, clean.removed)
+            answer = empty_question_answer(clean.text, settings)
+            return to_response(answer, req.include_text, elapsed_ms(start), session_id, None)
+        embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
         with deps.gate.read():
-            query = standalone_query(req.question, session_id, sessions, llm, settings)
+            query = standalone_query(clean.text, session_id, sessions, llm, settings)
             chunks = retrieve(
-                query or req.question,
+                query or clean.text,
                 req.k or settings.retrieval_top_k,
                 embedder,
                 settings,
@@ -257,22 +263,47 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                 access_filter(req, user),
             )
             # the answer step sees the original question, never the history
-            answer = answer_from_chunks(req.question, chunks, llm, settings)
-        record_turn(sessions, session_id, req.question, query, answer)
-        log.info("chat user=%s chunks=%d refused=%s", user.user_id, len(chunks), answer.refused)
+            answer = answer_from_chunks(clean.text, chunks, llm, settings)
+        record_turn(sessions, session_id, clean.text, query, answer)
+        log.info(
+            "chat user=%s chunks=%d refused=%s removed=%d",
+            user.user_id,
+            len(chunks),
+            answer.refused,
+            clean.removed,
+        )
         return to_response(answer, req.include_text, elapsed_ms(start), session_id, query)
 
     @app.post("/chat/stream")
     def chat_stream(req: ChatRequest, user: CurrentUser):
         start = time.perf_counter()
         sessions = deps.sessions_for(user)
-        embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
         session_id = session_for(req)
+        clean = prepare_question(req.question, settings)  # same input as /chat
+        if settings.injection_defense and not clean.text:  # nothing but an attack
+            log.info("chat user=%s pure-attack removed=%d", user.user_id, clean.removed)
+            refused = empty_question_answer(clean.text, settings)
+            return StreamingResponse(
+                iter(
+                    [
+                        sse("sources", {"sources": [], "standalone_query": None}),
+                        sse(
+                            "done",
+                            to_response(
+                                refused, req.include_text, elapsed_ms(start), session_id, None
+                            ),
+                        ),
+                    ]
+                ),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            )
+        embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
         lease = deps.gate.acquire_read()
         try:  # retrieval errors are still plain HTTP errors: nothing has been sent yet
-            query = standalone_query(req.question, session_id, sessions, llm, settings)
+            query = standalone_query(clean.text, session_id, sessions, llm, settings)
             chunks = retrieve(
-                query or req.question,
+                query or clean.text,
                 req.k or settings.retrieval_top_k,
                 embedder,
                 settings,
@@ -292,7 +323,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                         "standalone_query": query,
                     },
                 )
-                for item in stream_answer(req.question, chunks, llm, settings):
+                for item in stream_answer(clean.text, chunks, llm, settings):
                     if isinstance(item, Answer):
                         done = sse(
                             "done",
@@ -300,7 +331,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                                 item, req.include_text, elapsed_ms(start), session_id, query
                             ),
                         )
-                        record_turn(sessions, session_id, req.question, query, item)
+                        record_turn(sessions, session_id, clean.text, query, item)
                         yield done
                     else:
                         yield sse("token", {"text": item})

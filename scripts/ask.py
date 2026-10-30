@@ -19,12 +19,13 @@ import openai  # noqa: E402
 
 from app.config import get_settings  # noqa: E402
 from app.dataset.schemas import Department  # noqa: E402
-from app.rag.answer import answer_from_chunks  # noqa: E402
+from app.rag.answer import answer_from_chunks, empty_question_answer  # noqa: E402
 from app.rag.errors import IndexNotReadyError, MissingAPIKeyError  # noqa: E402
 from app.rag.filters import RetrievalFilter, VersionPolicy, effective_policy  # noqa: E402
 from app.rag.llm import get_embedder, get_llm  # noqa: E402
 from app.rag.rerank import get_reranker  # noqa: E402
 from app.rag.retrieve import retrieve  # noqa: E402
+from app.rag.sanitize import prepare_question  # noqa: E402
 
 UNAVAILABLE = (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError)
 
@@ -55,14 +56,19 @@ def main() -> int:
     )
 
     try:
+        clean = prepare_question(args.question, settings)
         embedder = get_embedder(settings)
         llm = get_llm(settings)
         reranker = get_reranker(settings)
-        chunks = retrieve(args.question, args.k, embedder, settings, reranker, filters)
-        if not chunks and settings.answer_mode == "baseline":
-            print("No document matches these filters, so there is nothing to answer from.")
-            return 0
-        result = answer_from_chunks(args.question, chunks, llm, settings)
+        if settings.injection_defense and not clean.text:  # nothing but an attack
+            chunks = []
+            result = empty_question_answer(clean.text, settings)
+        else:
+            chunks = retrieve(clean.text, args.k, embedder, settings, reranker, filters)
+            if not chunks and settings.answer_mode == "baseline":
+                print("No document matches these filters, so there is nothing to answer from.")
+                return 0
+            result = answer_from_chunks(clean.text, chunks, llm, settings)
     except (MissingAPIKeyError, IndexNotReadyError) as exc:
         print(exc, file=sys.stderr)
         return 2
@@ -83,6 +89,7 @@ def main() -> int:
             "no_context": "no document matches the question and filters",
             "low_score": f"best match scored below {settings.refusal_min_score}, no LLM call",
             "model": "the retrieved sources do not answer it",
+            "blocked": "the reply was withheld by the output guard",
         }
         print(f"\n(Refused: {result.refusal_reason}, {reasons[result.refusal_reason or 'model']})")
     elif result.citations:

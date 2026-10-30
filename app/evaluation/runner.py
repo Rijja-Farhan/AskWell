@@ -23,13 +23,14 @@ from app.evaluation import metrics
 from app.evaluation.judge import JudgeError, judge_answer
 from app.evaluation.report import build_report, load_report, write_report
 from app.rag.access import ACCESS_VERSION, GUEST, can_read, load_users
-from app.rag.answer import ANSWER_VERSION, answer_from_chunks
+from app.rag.answer import ANSWER_VERSION, answer_from_chunks, empty_question_answer
 from app.rag.bm25 import BM25_VERSION
 from app.rag.embeddings import Embedder
 from app.rag.filters import FILTER_VERSION, RetrievalFilter
 from app.rag.llm import LLM
 from app.rag.rerank import RERANK_VERSION, Reranker
 from app.rag.retrieve import RetrievedChunk, retrieve
+from app.rag.sanitize import INJECTION_VERSION, prepare_question
 from app.rag.store import open_collection, resolve
 
 STAGES = ("retrieval", "generate", "judge")
@@ -87,6 +88,7 @@ class QuestionResult(BaseModel):
     gold_doc_ids: list[str]
     superseded_doc_ids: list[str]
     user_id: str = ""  # the profile the question was asked as (Phase 12)
+    attack_in: str | None = None  # injection questions: "question" or "document" (Phase 13)
     # Retrieved doc ids this question's user may not read; must always be empty.
     leaked_docs: list[str] = []
     retrieved: list[ChunkRef] = []
@@ -223,6 +225,9 @@ def run_config(settings: Settings, eval_set: Path) -> dict:
     config["rbac_enabled"] = settings.rbac_enabled
     if settings.rbac_enabled:
         config["access_version"] = ACCESS_VERSION
+    # Runs made before Phase 13 have neither key, so they never resume as defended runs.
+    if settings.injection_defense:
+        config |= {"injection_enabled": True, "injection_version": INJECTION_VERSION}
     config["answer_mode"] = settings.answer_mode
     if settings.answer_mode == "grounded":
         config |= {
@@ -276,6 +281,7 @@ def new_result(q: EvalQuestion) -> QuestionResult:
         gold_doc_ids=q.gold_doc_ids,
         superseded_doc_ids=q.superseded_doc_ids,
         user_id=q.user_id,
+        attack_in=q.attack_in,
     )
 
 
@@ -369,8 +375,11 @@ def run_eval(
             assert embedder is not None, "the retrieval stage needs an embedder"
             before = timed.seconds if timed else 0.0
             access = RetrievalFilter(user=profile(q)) if settings.rbac_enabled else None
-            hits = retrieve(
-                q.question, settings.eval_retrieval_k, embedder, settings, timed, access
+            clean = prepare_question(q.question, settings).text
+            hits = (
+                []  # a pure attack retrieves nothing, as in the API
+                if settings.injection_defense and not clean
+                else retrieve(clean, settings.eval_retrieval_k, embedder, settings, timed, access)
             )
             r.leaked_docs = sorted({h.doc_id for h in hits if not can_read(profile(q), h.metadata)})
             if timed and settings.reranker != "none":
@@ -385,7 +394,11 @@ def run_eval(
         chunks = load_chunks(collection, r.retrieved[: settings.retrieval_top_k])
         if stage == "generate":
             assert chat["generate"] is not None, "the generate stage needs an LLM"
-            result = answer_from_chunks(q.question, chunks, chat["generate"], settings)
+            clean = prepare_question(q.question, settings).text
+            if settings.injection_defense and not clean:  # nothing but an attack: no LLM call
+                result = empty_question_answer(clean, settings)
+            else:
+                result = answer_from_chunks(clean, chunks, chat["generate"], settings)
             r.answer, r.model = result.answer, result.model
             if settings.answer_mode == "grounded":
                 r.refused, r.refusal_reason = result.refused, result.refusal_reason

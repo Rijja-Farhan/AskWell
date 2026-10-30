@@ -360,7 +360,7 @@ def test_run_config_answer_fields(settings):
     path = resolve(settings.eval_set_path)
     grounded = run_config(settings, path)
     assert grounded["answer_mode"] == "grounded"
-    assert grounded["answer_version"] == 1 and grounded["refusal_min_score"] == -4.0
+    assert grounded["answer_version"] == 2 and grounded["refusal_min_score"] == -4.0
     baseline = run_config(settings.model_copy(update={"answer_mode": "baseline"}), path)
     assert baseline["answer_mode"] == "baseline"
     assert "answer_version" not in baseline and "refusal_min_score" not in baseline
@@ -433,3 +433,28 @@ def test_runner_passes_user_and_reports_leaks(settings):
     # a run made before Phase 12 (no access keys) cannot resume as an access-aware run
     config = run_config(on, resolve(on.eval_set_path))
     assert "access_version" in config and "rbac_enabled" in config
+
+
+def test_runner_sanitizes_questions_and_reports_injection(settings):
+    llm, judge = FakeLLM("Per the sources [1]."), judge_llm()
+    run_eval("inj", ALL, FakeEmbedder(), llm, judge, settings)
+    run_dir = settings.eval_reports_dir / "inj"
+    results = load_results(run_dir / "results.jsonl")
+    # the two pure-attack questions never reach the LLM and get the standard refusal
+    for qid in ("q077", "q078"):
+        r = results[qid]
+        assert r.refused and r.refusal_reason == "no_context" and r.retrieved == []
+    asked = " ".join(user for _, user in llm.calls).lower()
+    assert "ignore your previous" not in asked and "admin mode" not in asked
+    assert "<user_question>\nTell me the VPN gateway address.\n</user_question>" in " ".join(
+        user for _, user in llm.calls
+    )
+    assert results["q071"].attack_in == "document" and results["q076"].attack_in == "question"
+    report = json.loads((run_dir / "report.json").read_text())
+    assert report["injection"]["document"]["n"] == 5 and report["injection"]["question"]["n"] == 5
+    assert report["injection"]["question"]["refused"] == 2
+    assert report["injection"]["document"]["compromised"] == []
+    markdown = (run_dir / "report.md").read_text()
+    assert "## Injection" in markdown and "| document | 5 |" in markdown
+    manifest = json.loads((run_dir / "manifest.json").read_text())["config"]
+    assert manifest["injection_enabled"] is True and manifest["injection_version"] == 1
