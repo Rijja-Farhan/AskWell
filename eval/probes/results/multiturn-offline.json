@@ -1,0 +1,494 @@
+{
+  "k": 5,
+  "conversations": 14,
+  "turns": [
+    {
+      "conversation": "mt01",
+      "kind": "pronoun",
+      "turn": 1,
+      "question": "How many weeks of paid parental leave do primary caregivers get?",
+      "standalone_query": "How many weeks of paid parental leave do primary caregivers get?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt01",
+      "kind": "pronoun",
+      "turn": 2,
+      "question": "Who is eligible for it?",
+      "standalone_query": "Who is eligible for the paid parental leave policy?",
+      "raw": {
+        "recall": 0.0,
+        "mrr": 0.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt02",
+      "kind": "ellipsis",
+      "turn": 1,
+      "question": "How many PTO days does a full-time employee get?",
+      "standalone_query": "How many PTO days does a full-time employee get?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt02",
+      "kind": "ellipsis",
+      "turn": 2,
+      "question": "And how do I request them?",
+      "standalone_query": "How do I request paid time off PTO days?",
+      "raw": {
+        "recall": 0.5,
+        "mrr": 0.3333333333333333
+      },
+      "rewritten": {
+        "recall": 0.5,
+        "mrr": 0.5
+      }
+    },
+    {
+      "conversation": "mt03",
+      "kind": "cross-doc",
+      "turn": 1,
+      "question": "What is the hotel limit for a business trip to Seattle?",
+      "standalone_query": "What is the hotel limit for a business trip to Seattle?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt03",
+      "kind": "cross-doc",
+      "turn": 2,
+      "question": "Which GL account are hotel costs coded to?",
+      "standalone_query": "Which GL account are hotel costs coded to in the chart of accounts?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 0.2
+      },
+      "rewritten": {
+        "recall": 0.0,
+        "mrr": 0.0
+      }
+    },
+    {
+      "conversation": "mt04",
+      "kind": "cross-doc",
+      "turn": 1,
+      "question": "What does error NX-4012 mean?",
+      "standalone_query": "What does error NX-4012 mean?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt04",
+      "kind": "cross-doc",
+      "turn": 2,
+      "question": "How do I fix it for the VPN?",
+      "standalone_query": "How do I fix VPN error NX-4012?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 0.5
+      }
+    },
+    {
+      "conversation": "mt04",
+      "kind": "cross-doc",
+      "turn": 3,
+      "question": "What is the lockout after failed attempts?",
+      "standalone_query": "What is the account lockout after failed password attempts?",
+      "raw": {
+        "recall": 0.5,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 0.5,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt05",
+      "kind": "ellipsis",
+      "turn": 1,
+      "question": "What is the monthly corporate card limit for a G5 employee?",
+      "standalone_query": "What is the monthly corporate card limit for a G5 employee?",
+      "raw": {
+        "recall": 0.0,
+        "mrr": 0.0
+      },
+      "rewritten": {
+        "recall": 0.0,
+        "mrr": 0.0
+      }
+    },
+    {
+      "conversation": "mt05",
+      "kind": "ellipsis",
+      "turn": 2,
+      "question": "And for G3?",
+      "standalone_query": "What is the monthly corporate card limit for a G3 employee?",
+      "raw": {
+        "recall": 0.0,
+        "mrr": 0.0
+      },
+      "rewritten": {
+        "recall": 0.0,
+        "mrr": 0.0
+      }
+    },
+    {
+      "conversation": "mt06",
+      "kind": "topic-switch",
+      "turn": 1,
+      "question": "How long is a guest Wi-Fi voucher valid?",
+      "standalone_query": "How long is a guest Wi-Fi voucher valid?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt06",
+      "kind": "topic-switch",
+      "turn": 2,
+      "question": "What are the visiting hours at distribution centers?",
+      "standalone_query": "What are the visiting hours at Nimbus distribution centers?",
+      "raw": {
+        "recall": 0.0,
+        "mrr": 0.0
+      },
+      "rewritten": {
+        "recall": 0.0,
+        "mrr": 0.0
+      }
+    },
+    {
+      "conversation": "mt07",
+      "kind": "pronoun",
+      "turn": 1,
+      "question": "What breaks do I get on an 8-hour warehouse shift?",
+      "standalone_query": "What breaks do I get on an 8-hour warehouse shift?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt07",
+      "kind": "pronoun",
+      "turn": 2,
+      "question": "Are they paid?",
+      "standalone_query": "Are breaks on an 8-hour warehouse shift paid?",
+      "raw": {
+        "recall": 0.5,
+        "mrr": 0.2
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt08",
+      "kind": "cross-doc",
+      "turn": 1,
+      "question": "Who has to approve a $40,000 purchase?",
+      "standalone_query": "Who has to approve a $40,000 purchase?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt08",
+      "kind": "cross-doc",
+      "turn": 2,
+      "question": "What are the standard payment terms for the supplier after that?",
+      "standalone_query": "What are the standard payment terms for Nimbus suppliers?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt09",
+      "kind": "pronoun",
+      "turn": 1,
+      "question": "How do I fix scanner error NX-3305?",
+      "standalone_query": "How do I fix scanner error NX-3305?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 0.5
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 0.5
+      }
+    },
+    {
+      "conversation": "mt09",
+      "kind": "pronoun",
+      "turn": 2,
+      "question": "What does that code mean in the error reference?",
+      "standalone_query": "What does error code NX-3305 mean in the error reference?",
+      "raw": {
+        "recall": 0.0,
+        "mrr": 0.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 0.25
+      }
+    },
+    {
+      "conversation": "mt10",
+      "kind": "topic-switch",
+      "turn": 1,
+      "question": "When is open enrollment for benefits?",
+      "standalone_query": "When is open enrollment for benefits?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt10",
+      "kind": "topic-switch",
+      "turn": 2,
+      "question": "What is the shift differential for third shift?",
+      "standalone_query": "What is the shift differential for third shift?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 0.5
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 0.5
+      }
+    },
+    {
+      "conversation": "mt10",
+      "kind": "topic-switch",
+      "turn": 3,
+      "question": "And how does Nimbus match 401(k)?",
+      "standalone_query": "How much does Nimbus match on 401(k) contributions?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt11",
+      "kind": "ellipsis",
+      "turn": 1,
+      "question": "How long do I have to return my old laptop after I get a replacement?",
+      "standalone_query": "How long do I have to return my old laptop after I get a replacement?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 0.5
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 0.5
+      }
+    },
+    {
+      "conversation": "mt11",
+      "kind": "ellipsis",
+      "turn": 2,
+      "question": "What about a scanner?",
+      "standalone_query": "How long do I have to return my old handheld scanner after a replacement?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 0.5
+      }
+    },
+    {
+      "conversation": "mt12",
+      "kind": "pronoun",
+      "turn": 1,
+      "question": "What is the response time for a SEV1 security incident?",
+      "standalone_query": "What is the response time for a SEV1 security incident?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt12",
+      "kind": "pronoun",
+      "turn": 2,
+      "question": "Who do I escalate it to?",
+      "standalone_query": "Who do I escalate a SEV1 security incident to?",
+      "raw": {
+        "recall": 0.0,
+        "mrr": 0.0
+      },
+      "rewritten": {
+        "recall": 0.0,
+        "mrr": 0.0
+      }
+    },
+    {
+      "conversation": "mt13",
+      "kind": "topic-switch",
+      "turn": 1,
+      "question": "Where is site WH-SEA-01 and when did it open?",
+      "standalone_query": "Where is site WH-SEA-01 and when did it open?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 0.25
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 0.25
+      }
+    },
+    {
+      "conversation": "mt13",
+      "kind": "topic-switch",
+      "turn": 2,
+      "question": "How do I get on guest Wi-Fi as a visitor?",
+      "standalone_query": "How does a visitor get on guest Wi-Fi?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt13",
+      "kind": "topic-switch",
+      "turn": 3,
+      "question": "And what must visitors wear on the warehouse floor?",
+      "standalone_query": "What must visitors wear on the warehouse floor?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt14",
+      "kind": "pronoun",
+      "turn": 1,
+      "question": "What PPE do I need at the dock doors?",
+      "standalone_query": "What PPE do I need at the dock doors?",
+      "raw": {
+        "recall": 1.0,
+        "mrr": 1.0
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    },
+    {
+      "conversation": "mt14",
+      "kind": "pronoun",
+      "turn": 2,
+      "question": "How often must forklift certification be renewed?",
+      "standalone_query": "How often must forklift certification be renewed under the warehouse safety policy?",
+      "raw": {
+        "recall": 0.5,
+        "mrr": 0.3333333333333333
+      },
+      "rewritten": {
+        "recall": 1.0,
+        "mrr": 1.0
+      }
+    }
+  ],
+  "summary": {
+    "raw": {
+      "followups": {
+        "recall": 0.5882,
+        "mrr": 0.5039
+      },
+      "all_turns": {
+        "recall": 0.7419,
+        "mrr": 0.6392
+      }
+    },
+    "rewritten": {
+      "followups": {
+        "recall": 0.7059,
+        "mrr": 0.6029
+      },
+      "all_turns": {
+        "recall": 0.8065,
+        "mrr": 0.6935
+      }
+    }
+  },
+  "mode": "offline"
+}

@@ -12,6 +12,7 @@ Starlette a sync generator, which it iterates in the thread pool as well.
 
 import json
 import logging
+import re
 import time
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
@@ -21,7 +22,7 @@ import openai
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -31,11 +32,14 @@ from app.api.schemas import (
     ChatRequest,
     ChatResponse,
     ReadyResponse,
+    SessionResponse,
     to_response,
     to_source,
+    to_turn,
 )
 from app.config import Settings, get_settings
-from app.rag.answer import Answer, answer_question, stream_answer
+from app.rag.answer import Answer, answer_from_chunks, stream_answer
+from app.rag.conversation import memory_active, record_turn, standalone_query
 from app.rag.errors import CorpusParseError, IndexNotReadyError, MissingAPIKeyError
 from app.rag.filters import RetrievalFilter
 from app.rag.ingest import ingest_corpus
@@ -46,6 +50,7 @@ log = logging.getLogger("askwell.api")
 
 UNAVAILABLE = (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError)
 DEFAULT_RETRY_AFTER = 30
+SESSION_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
 
 class IngestBusyError(RuntimeError):
@@ -105,6 +110,10 @@ def filters_from(req: ChatRequest) -> RetrievalFilter | None:
     )
 
 
+def valid_session_id(value: str) -> bool:
+    return SESSION_ID.fullmatch(value) is not None
+
+
 def elapsed_ms(start: float) -> int:
     return round((time.perf_counter() - start) * 1000)
 
@@ -124,7 +133,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                 log.warning("startup: %s failed (%s)", build.__name__, type(exc).__name__)
         yield
 
-    app = FastAPI(title="Askwell", version="0.10.0", lifespan=lifespan)
+    app = FastAPI(title="Askwell", version="0.11.0", lifespan=lifespan)
     app.state.deps = deps
 
     origins = [o.strip() for o in settings.api_cors_origins.split(",") if o.strip()]
@@ -132,7 +141,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
-            allow_methods=["GET", "POST"],
+            allow_methods=["GET", "POST", "DELETE"],
             allow_headers=["*"],
         )
 
@@ -208,30 +217,40 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
         return JSONResponse(body.model_dump(), status_code=503 if problems else 200)
 
     # Chat
+    def session_for(req: ChatRequest) -> str | None:
+        """The session id when memory applies; a supplied id is ignored if memory is off."""
+        return req.session_id if memory_active(req.session_id, settings) else None
+
     @app.post("/chat", response_model=ChatResponse)
     def chat(req: ChatRequest) -> ChatResponse:
         start = time.perf_counter()
         embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
+        session_id = session_for(req)
         with deps.gate.read():
-            answer = answer_question(
-                req.question,
+            query = standalone_query(req.question, session_id, deps.sessions, llm, settings)
+            chunks = retrieve(
+                query or req.question,
                 req.k or settings.retrieval_top_k,
                 embedder,
-                llm,
                 settings,
                 reranker,
                 filters_from(req),
             )
-        return to_response(answer, req.include_text, elapsed_ms(start))
+            # the answer step sees the original question, never the history
+            answer = answer_from_chunks(req.question, chunks, llm, settings)
+        record_turn(deps.sessions, session_id, req.question, query, answer)
+        return to_response(answer, req.include_text, elapsed_ms(start), session_id, query)
 
     @app.post("/chat/stream")
     def chat_stream(req: ChatRequest):
         start = time.perf_counter()
         embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
+        session_id = session_for(req)
         lease = deps.gate.acquire_read()
         try:  # retrieval errors are still plain HTTP errors: nothing has been sent yet
+            query = standalone_query(req.question, session_id, deps.sessions, llm, settings)
             chunks = retrieve(
-                req.question,
+                query or req.question,
                 req.k or settings.retrieval_top_k,
                 embedder,
                 settings,
@@ -246,11 +265,21 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
             try:
                 yield sse(
                     "sources",
-                    {"sources": [to_source(c, req.include_text).model_dump() for c in chunks]},
+                    {
+                        "sources": [to_source(c, req.include_text).model_dump() for c in chunks],
+                        "standalone_query": query,
+                    },
                 )
                 for item in stream_answer(req.question, chunks, llm, settings):
                     if isinstance(item, Answer):
-                        yield sse("done", to_response(item, req.include_text, elapsed_ms(start)))
+                        done = sse(
+                            "done",
+                            to_response(
+                                item, req.include_text, elapsed_ms(start), session_id, query
+                            ),
+                        )
+                        record_turn(deps.sessions, session_id, req.question, query, item)
+                        yield done
                     else:
                         yield sse("token", {"text": item})
             except Exception as exc:  # noqa: BLE001 - the response has started: emit an event
@@ -266,6 +295,22 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
             background=BackgroundTask(lease.release),  # covers a stream that never started
         )
+
+    # Sessions (ids are labels, not identities; per-user ownership comes in Phase 12)
+    @app.get("/sessions/{session_id}", response_model=SessionResponse)
+    def get_session(session_id: str) -> SessionResponse:
+        if not valid_session_id(session_id) or not deps.sessions.exists(session_id):
+            raise StarletteHTTPException(404, "Session not found.")
+        return SessionResponse(
+            session_id=session_id, turns=[to_turn(t) for t in deps.sessions.get(session_id)]
+        )
+
+    @app.delete("/sessions/{session_id}", status_code=204)
+    def delete_session(session_id: str) -> Response:
+        if not valid_session_id(session_id) or not deps.sessions.exists(session_id):
+            raise StarletteHTTPException(404, "Session not found.")
+        deps.sessions.clear(session_id)
+        return Response(status_code=204)
 
     # Ingest
     @app.post("/ingest", response_model=SyncStats)

@@ -83,6 +83,14 @@ class Settings(BaseSettings):
     answer_mode: Literal["baseline", "grounded"] = "grounded"
     refusal_min_score: float | None = -4.0
 
+    # Conversation memory (per session_id): history kept per session, and how many recent turns
+    # the follow-up rewriter sees. With memory_enabled=false a session_id is accepted but ignored.
+    memory_enabled: bool = True
+    memory_max_turns: int = 10
+    memory_rewrite_turns: int = 4
+    memory_max_sessions: int = 1000
+    memory_ttl_seconds: int = 3600
+
     # API server: bind address and CORS origins (comma list; empty disables CORS)
     api_host: str = "127.0.0.1"
     api_port: int = 8000

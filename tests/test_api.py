@@ -456,3 +456,152 @@ def test_cors_disabled_by_default_and_enabled_by_setting(tmp_path):
     assert on.options("/chat", headers=headers).headers["access-control-allow-origin"] == (
         "http://ui.test"
     )
+
+
+# --- sessions and memory (Phase 11) ---------------------------------------------------------
+
+
+class ScriptedLLM(FakeLLM):
+    """Rewrite calls (recognized by their system prompt) get `rewrite`; answers get `reply`."""
+
+    def __init__(self, reply="Twenty days [1].", rewrite="annual leave part-time staff"):
+        super().__init__(reply)
+        self.rewrite = rewrite
+        self.rewrite_calls = 0
+
+    def complete(self, system, user):
+        if system.startswith("You rewrite a follow-up"):
+            self.rewrite_calls += 1
+            self.calls.append((system, user))
+            if isinstance(self.rewrite, Exception):
+                raise self.rewrite
+            return self.rewrite
+        return super().complete(system, user)
+
+
+def two_turns(client, sid="demo", **extra):
+    first = client.post("/chat", json={"question": QUESTION, "session_id": sid, **extra})
+    second = client.post("/chat", json={"question": "And for part-time staff?", "session_id": sid})
+    return first, second
+
+
+def test_chat_without_session_is_stateless(index_settings):
+    llm = ScriptedLLM()
+    client, _ = make_client(index_settings, llm=llm)
+    body = client.post("/chat", json={"question": QUESTION}).json()
+    assert body["session_id"] is None and body["standalone_query"] is None
+    assert llm.rewrite_calls == 0 and len(llm.calls) == 1
+    assert client.get("/sessions/demo").status_code == 404
+
+
+def test_chat_with_session_rewrites_follow_up_and_stores_turns(index_settings):
+    llm = ScriptedLLM()
+    client, _ = make_client(index_settings, llm=llm)
+    first, second = two_turns(client)
+    assert first.json()["session_id"] == "demo"
+    assert first.json()["standalone_query"] == QUESTION
+    body = second.json()
+    assert body["standalone_query"] == "annual leave part-time staff"
+    assert llm.rewrite_calls == 1  # the first turn had no history, so no call
+    # the answer step gets the ORIGINAL question and no history
+    system, user = llm.calls[-1]
+    assert user.endswith("Question: And for part-time staff?") and QUESTION not in user
+    assert QUESTION not in system
+    turns = client.get("/sessions/demo").json()["turns"]
+    assert [t["question"] for t in turns] == [QUESTION, "And for part-time staff?"]
+    assert turns[1]["standalone_query"] == "annual leave part-time staff"
+    assert set(turns[0]) == {"question", "standalone_query", "answer", "refused", "doc_ids"}
+
+
+def test_retrieval_uses_standalone_query(index_settings, monkeypatch):
+    seen = []
+    real = api_main.retrieve
+    monkeypatch.setattr(
+        api_main, "retrieve", lambda q, *a, **kw: seen.append(q) or real(q, *a, **kw)
+    )
+    client, _ = make_client(index_settings, llm=ScriptedLLM(rewrite="parental leave weeks"))
+    two_turns(client)
+    assert seen == [QUESTION, "parental leave weeks"]
+
+
+def test_rewrite_failure_does_not_fail_request(index_settings):
+    client, _ = make_client(index_settings, llm=ScriptedLLM(rewrite=RuntimeError("boom")))
+    _, second = two_turns(client)
+    assert second.status_code == 200
+    assert second.json()["standalone_query"] == "And for part-time staff?"
+
+
+def test_sessions_are_isolated(index_settings):
+    llm = ScriptedLLM()
+    client, _ = make_client(index_settings, llm=llm)
+    client.post("/chat", json={"question": QUESTION, "session_id": "a"})
+    client.post("/chat", json={"question": QUESTION, "session_id": "b"})
+    assert llm.rewrite_calls == 0  # b's first turn saw no history
+    assert len(client.get("/sessions/a").json()["turns"]) == 1
+    client.delete("/sessions/a")
+    assert client.get("/sessions/b").status_code == 200
+
+
+def test_memory_disabled_ignores_session_id(index_settings):
+    settings = index_settings.model_copy(update={"memory_enabled": False})
+    llm = ScriptedLLM()
+    client, _ = make_client(settings, llm=llm)
+    first, second = two_turns(client)
+    assert second.json()["standalone_query"] is None and second.json()["session_id"] is None
+    assert llm.rewrite_calls == 0 and client.get("/sessions/demo").status_code == 404
+
+
+def test_refused_turn_is_stored_flagged(index_settings):
+    client, _ = make_client(index_settings)
+    client.post("/chat", json={"question": QUESTION, "session_id": "r", "as_of": "1990-01-01"})
+    turns = client.get("/sessions/r").json()["turns"]
+    assert len(turns) == 1 and turns[0]["refused"] is True and turns[0]["doc_ids"] == []
+
+
+def test_get_and_delete_session(index_settings):
+    client, _ = make_client(index_settings)
+    two_turns(client)
+    body = client.get("/sessions/demo").json()
+    assert body["session_id"] == "demo" and len(body["turns"]) == 2
+    assert client.delete("/sessions/demo").status_code == 204
+    r = client.delete("/sessions/demo")
+    assert r.status_code == 404 and r.json()["error"]["code"] == "http_404"
+    assert client.get("/sessions/demo").status_code == 404
+    assert client.get("/sessions/bad id!").status_code == 404
+
+
+def test_invalid_session_id_is_422(client):
+    for bad in ("", "has space", "x" * 65, "semi;colon"):
+        r = client.post("/chat", json={"question": QUESTION, "session_id": bad})
+        assert r.status_code == 422 and r.json()["error"]["code"] == "validation_error"
+
+
+def test_stream_with_session_appends_once(index_settings):
+    llm = ScriptedLLM()
+    client, _ = make_client(index_settings, llm=llm)
+    client.post("/chat", json={"question": QUESTION, "session_id": "st"})
+    r = client.post(
+        "/chat/stream", json={"question": "And for part-time staff?", "session_id": "st"}
+    )
+    events = parse_sse(r.text)
+    assert [e for e, _ in events][0] == "sources" and events[-1][0] == "done"
+    assert events[0][1]["standalone_query"] == "annual leave part-time staff"
+    assert events[-1][1]["standalone_query"] == "annual leave part-time staff"
+    assert len(client.get("/sessions/st").json()["turns"]) == 2
+
+
+def test_stream_without_session_has_null_query(client):
+    events = parse_sse(client.post("/chat/stream", json={"question": QUESTION}).text)
+    assert events[0][1]["standalone_query"] is None and events[-1][1]["session_id"] is None
+
+
+def test_stream_error_does_not_append(index_settings):
+    class Failing(ScriptedLLM):
+        def stream(self, system, user, size=4):
+            raise provider_error(openai.APIConnectionError, 500) if False else RuntimeError("x")
+            yield ""  # pragma: no cover
+
+    client, _ = make_client(index_settings, llm=Failing())
+    r = client.post("/chat/stream", json={"question": QUESTION, "session_id": "e"})
+    assert parse_sse(r.text)[-1][0] == "error"
+    assert client.get("/sessions/e").status_code == 404

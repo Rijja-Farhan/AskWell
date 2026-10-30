@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, SerializeAsAny, field_validator
 from app.dataset.schemas import Department
 from app.rag.answer import Answer, Citation
 from app.rag.filters import VersionPolicy
+from app.rag.memory import Turn
 from app.rag.retrieve import RetrievedChunk
 
 MAX_QUESTION_CHARS = 2000
@@ -21,6 +22,10 @@ class ChatRequest(BaseModel):
     as_of: date | None = None
     version_policy: VersionPolicy | None = None
     include_text: bool = False  # add each source's chunk text
+    # Client-chosen conversation label (not an identity). Omitted: stateless, no rewrite.
+    session_id: str | None = Field(
+        default=None, min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$"
+    )
 
     @field_validator("question")
     @classmethod
@@ -55,6 +60,21 @@ class ChatResponse(BaseModel):
     sources: list[SerializeAsAny[Source]]
     model: str
     latency_ms: int
+    session_id: str | None = None
+    standalone_query: str | None = None  # the query retrieval used, when memory applied
+
+
+class TurnOut(BaseModel):
+    question: str
+    standalone_query: str
+    answer: str
+    refused: bool
+    doc_ids: list[str]
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+    turns: list[TurnOut]
 
 
 class TokenEvent(BaseModel):
@@ -99,7 +119,23 @@ def to_source(chunk: RetrievedChunk, include_text: bool) -> Source:
     return SourceWithText(**fields, text=chunk.text) if include_text else Source(**fields)
 
 
-def to_response(answer: Answer, include_text: bool, latency_ms: int) -> ChatResponse:
+def to_turn(turn: Turn) -> TurnOut:
+    return TurnOut(
+        question=turn.question,
+        standalone_query=turn.standalone_query,
+        answer=turn.answer,
+        refused=turn.refused,
+        doc_ids=list(turn.doc_ids),
+    )
+
+
+def to_response(
+    answer: Answer,
+    include_text: bool,
+    latency_ms: int,
+    session_id: str | None = None,
+    standalone_query: str | None = None,
+) -> ChatResponse:
     return ChatResponse(
         answer=answer.answer,
         refused=answer.refused,
@@ -109,4 +145,6 @@ def to_response(answer: Answer, include_text: bool, latency_ms: int) -> ChatResp
         sources=[to_source(c, include_text) for c in answer.chunks],
         model=answer.model,
         latency_ms=latency_ms,
+        session_id=session_id,
+        standalone_query=standalone_query,
     )

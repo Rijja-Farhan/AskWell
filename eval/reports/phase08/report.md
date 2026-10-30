@@ -5,7 +5,7 @@
 - Chat model `gemini-3.6-flash`, judge model `gemini-3.6-flash`
 - Retrieval mode `hybrid` (BM25 v1, weight 0.3, rrf_k 60, 20 candidates per list), reranked by `BAAI/bge-reranker-base` (v1, top 40 candidates), versions `active_only` (filter v1)
 - Answer mode `baseline`
-- Stages done: retrieval 80/80, generate 22/80, judge 0/80
+- Stages done: retrieval 80/80, generate 42/80, judge 0/80
 - Deltas in brackets are versus run `phase07`
 
 Retrieval metrics are doc-level: each document counts at its best chunk rank, and k counts chunks. Questions without gold documents (unanswerable, some injection) show `n/a`. `scored` = questions with retrieval metrics, `judged` = questions with answer metrics. Sup@5 = share of conflicting-versions questions where a superseded version reaches the top 5.
@@ -33,7 +33,7 @@ Throttle waits are excluded; provider retries are not. `rerank` is part of `retr
 |---|---:|---:|---:|
 | retrieval | 80 | 7.506 (-0.135) | 13.672 (+1.502) |
 | rerank | 80 | 6.371 (-0.394) | 10.088 (-0.521) |
-| generate | 22 | 4.741 | 18.549 |
+| generate | 42 | 5.007 | 18.549 |
 
 ## Behavior failures (`behavior_ok` false)
 
@@ -47,7 +47,7 @@ None.
 
 | id | stage | message |
 |---|---|---|
-| q012 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |
-| q024 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |
-| q025 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |
-| q026 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |
+| q042 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |
+| q044 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |
+| q045 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |
+| q046 | generate | RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g |

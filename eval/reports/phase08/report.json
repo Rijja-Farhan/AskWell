@@ -32,7 +32,7 @@
       "n": 80
     },
     "generate": {
-      "ok": 22,
+      "ok": 42,
       "n": 80
     },
     "judge": {
@@ -44,7 +44,7 @@
     "simple": {
       "n": 16,
       "n_scored": 16,
-      "n_answered": 15,
+      "n_answered": 16,
       "n_judged": 0,
       "recall@1": 0.9375,
       "recall@3": 1.0,
@@ -61,7 +61,7 @@
     "exact-term": {
       "n": 12,
       "n_scored": 12,
-      "n_answered": 7,
+      "n_answered": 12,
       "n_judged": 0,
       "recall@1": 0.5833,
       "recall@3": 0.9167,
@@ -78,7 +78,7 @@
     "multi-doc": {
       "n": 12,
       "n_scored": 12,
-      "n_answered": 0,
+      "n_answered": 12,
       "n_judged": 0,
       "recall@1": 0.4583,
       "recall@3": 0.7917,
@@ -95,7 +95,7 @@
     "conflicting-versions": {
       "n": 10,
       "n_scored": 10,
-      "n_answered": 0,
+      "n_answered": 2,
       "n_judged": 0,
       "recall@1": 1.0,
       "recall@3": 1.0,
@@ -163,7 +163,7 @@
     "overall": {
       "n": 80,
       "n_scored": 68,
-      "n_answered": 22,
+      "n_answered": 42,
       "n_judged": 0,
       "recall@1": 0.7941,
       "recall@3": 0.9338,
@@ -190,8 +190,8 @@
       "p95": 10.088
     },
     "generate": {
-      "n": 22,
-      "median": 4.741,
+      "n": 42,
+      "median": 5.007,
       "p95": 18.549
     }
   },
@@ -200,22 +200,22 @@
   "retrieval_misses": [],
   "errors": [
     {
-      "id": "q012",
+      "id": "q042",
       "stage": "generate",
       "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     },
     {
-      "id": "q024",
+      "id": "q044",
       "stage": "generate",
       "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     },
     {
-      "id": "q025",
+      "id": "q045",
       "stage": "generate",
       "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     },
     {
-      "id": "q026",
+      "id": "q046",
       "stage": "generate",
       "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     }

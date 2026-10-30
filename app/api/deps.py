@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from app.config import Settings
 from app.rag.embeddings import Embedder
 from app.rag.llm import LLM, get_embedder, get_llm
+from app.rag.memory import InMemorySessionStore, SessionStore
 from app.rag.rerank import Reranker, get_reranker
 
 
@@ -88,11 +89,14 @@ class Deps:
     llm: LLM | None = None
     reranker: Reranker | None = None
     gate: IndexGate = field(default_factory=IndexGate)
+    sessions: SessionStore | None = None
     _reranker_ready: bool = field(default=False, repr=False)
     _build_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def __post_init__(self) -> None:
         self._reranker_ready = self.reranker is not None
+        if self.sessions is None:
+            self.sessions = InMemorySessionStore.from_settings(self.settings)
 
     def get_embedder(self) -> Embedder:
         with self._build_lock:
