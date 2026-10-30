@@ -17,13 +17,21 @@ import re
 import time
 from collections.abc import Iterator
 from contextlib import asynccontextmanager, contextmanager, nullcontext
+from pathlib import Path
 from typing import Annotated, Any
 
 import openai
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -34,6 +42,7 @@ from app.api.schemas import (
     ChatResponse,
     ReadyResponse,
     SessionResponse,
+    UserPublic,
     to_response,
     to_source,
     to_turn,
@@ -66,6 +75,8 @@ from app.rag.sanitize import prepare_question
 from app.rag.store import REPO_ROOT, SyncStats, open_collection
 
 log = logging.getLogger("askwell.api")
+
+UI_DIR = Path(__file__).resolve().parents[1] / "ui"
 
 UNAVAILABLE = (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError)
 DEFAULT_RETRY_AFTER = 30
@@ -396,6 +407,12 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
     def me(user: CurrentUser) -> UserProfile:
         return user
 
+    @app.get("/users", response_model=list[UserPublic])
+    def list_users() -> list[UserPublic]:
+        """The demo users for the UI's switcher. Public fields only; no header needed."""
+        users = deps.get_users()
+        return [UserPublic(**users[k].model_dump()) for k in sorted(users)]
+
     @app.post("/chat", response_model=ChatResponse)
     def chat(req: ChatRequest, user: CurrentUser, request: Request, response: Response):
         start = time.perf_counter()
@@ -679,6 +696,13 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
     def view_trace(trace_id: str, user: CurrentUser) -> HTMLResponse:
         require_trace_access(user)
         return HTMLResponse(render_html(trace_or_404(trace_id)))
+
+    # Web UI: plain static files from the same origin (no CORS, no build step).
+    @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+    def root() -> RedirectResponse:
+        return RedirectResponse("/ui/")
+
+    app.mount("/ui", StaticFiles(directory=UI_DIR, html=True), name="ui")
 
     return app
 

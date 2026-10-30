@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, SerializeAsAny, field_validator
 
-from app.dataset.schemas import Department
+from app.dataset.schemas import AccessLevel, Department
 from app.rag.answer import Answer, Citation
 from app.rag.filters import VersionPolicy
 from app.rag.memory import Turn
@@ -33,6 +33,17 @@ class ChatRequest(BaseModel):
         if not value.strip():
             raise ValueError("question must not be empty")
         return value
+
+
+class UserPublic(BaseModel):
+    """What `GET /users` shows per demo user: identity and access scope, never documents."""
+
+    user_id: str
+    name: str
+    role: str
+    department: Department
+    clearance: AccessLevel
+    departments: list[Department]
 
 
 class Source(BaseModel):

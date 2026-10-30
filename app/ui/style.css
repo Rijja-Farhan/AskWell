@@ -1,0 +1,67 @@
+:root {
+  --bg: #f6f7f9; --fg: #1d2330; --muted: #5d6677; --card: #fff; --line: #d9dde5;
+  --accent: #2455d6; --accent-fg: #fff; --user: #e6edff; --warn: #8a5a00; --warn-bg: #fff4d6;
+  --err: #9b1c1c; --err-bg: #fde8e8; --ok: #166534; --ok-bg: #e3f6e8; --old: #7a3b00;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151c; --fg: #e6e9f0; --muted: #9aa3b5; --card: #1b2030; --line: #2f3648;
+    --accent: #6b93ff; --accent-fg: #0b1020; --user: #23304f; --warn: #f2c66d; --warn-bg: #3a2f10;
+    --err: #ff9a9a; --err-bg: #3c1a1a; --ok: #7be0a0; --ok-bg: #143323; --old: #ffb36b;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--fg);
+  height: 100vh; display: flex; flex-direction: column; }
+button, select, textarea { font: inherit; color: inherit; }
+button { background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.topbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+  justify-content: space-between; padding: 10px 16px; background: var(--card);
+  border-bottom: 1px solid var(--line); }
+.topbar h1 { margin: 0; font-size: 18px; }
+.sub { font-weight: normal; color: var(--muted); font-size: 13px; margin-left: 8px; }
+.who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+select { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.badge { background: var(--user); border-radius: 12px; padding: 2px 10px; font-size: 13px; }
+.layout { flex: 1; min-height: 0; display: flex; }
+.chat { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0 16px 12px; }
+.thread { flex: 1; overflow-y: auto; padding: 16px 0; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 780px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--card); white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.user { align-self: flex-end; background: var(--user); }
+.msg.refused { border-left: 4px solid var(--warn); background: var(--warn-bg); }
+.msg.error { border-left: 4px solid var(--err); background: var(--err-bg); color: var(--err); }
+.msg.stopped .text::after { content: " (stopped)"; color: var(--muted); }
+.meta { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  font-size: 12px; color: var(--muted); white-space: normal; }
+.tag { border-radius: 10px; padding: 1px 8px; border: 1px solid var(--line); }
+.tag.refused { color: var(--warn); border-color: var(--warn); }
+.tag.cached { color: var(--ok); background: var(--ok-bg); border-color: var(--ok); }
+.rewrite { font-style: italic; }
+.chip { padding: 0 6px; margin: 0 1px; border-radius: 10px; font-size: 12px; color: var(--accent);
+  border-color: var(--accent); line-height: 1.5; }
+.chip.old { color: var(--old); border-color: var(--old); text-decoration: line-through; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px; }
+.examples button { font-size: 13px; text-align: left; }
+.composer { display: flex; gap: 8px; align-items: flex-end; }
+.composer textarea { flex: 1; resize: vertical; padding: 8px; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--card); }
+.panel { width: 360px; max-width: 45vw; border-left: 1px solid var(--line); background: var(--card);
+  overflow-y: auto; padding: 12px 14px; }
+.panel[hidden], [hidden] { display: none !important; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.panel dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; }
+.panel dt { color: var(--muted); }
+.panel dd { margin: 0; overflow-wrap: anywhere; }
+.status-superseded { color: var(--old); font-weight: 600; }
+.banner { background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 6px 10px;
+  margin: 8px 0; font-size: 13px; }
+.chunk { white-space: pre-wrap; font-size: 13px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px; max-height: 50vh; overflow-y: auto; }
+@media (max-width: 760px) {
+  .layout { flex-direction: column; }
+  .panel { width: auto; max-width: none; max-height: 45vh; border-left: 0; border-top: 1px solid var(--line); }
+}

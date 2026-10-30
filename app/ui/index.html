@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Askwell</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Askwell <span class="sub">Nimbus Logistics knowledge assistant</span></h1>
+    <div class="who">
+      <label for="user-select">Viewing as</label>
+      <select id="user-select" aria-label="Switch demo user">
+        <option value="">Guest</option>
+      </select>
+      <span id="user-badge" class="badge" aria-live="polite">Guest</span>
+      <button id="new-chat" type="button">New chat</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="chat">
+      <div id="thread" class="thread" aria-live="polite"></div>
+      <div id="examples" class="examples"></div>
+      <form id="composer" class="composer">
+        <textarea id="input" rows="2" placeholder="Ask a question (Enter to send, Shift+Enter for a new line)"></textarea>
+        <button id="send" type="submit">Send</button>
+        <button id="stop" type="button" hidden>Stop</button>
+      </form>
+    </main>
+
+    <aside id="citation-panel" class="panel" hidden aria-label="Source details">
+      <div class="panel-head">
+        <strong id="panel-title">Source</strong>
+        <button id="panel-close" type="button" aria-label="Close source panel">Close</button>
+      </div>
+      <div id="panel-body"></div>
+    </aside>
+  </div>
+
+  <template id="trace-link-template">
+    <button type="button" class="trace-link">Trace</button>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
