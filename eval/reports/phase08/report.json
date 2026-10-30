@@ -23,15 +23,16 @@
     "rerank_candidates": 40,
     "rerank_version": 1,
     "version_policy": "active_only",
-    "filter_version": 1
+    "filter_version": 1,
+    "answer_mode": "baseline"
   },
   "stages": {
     "retrieval": {
-      "ok": 62,
+      "ok": 80,
       "n": 80
     },
     "generate": {
-      "ok": 0,
+      "ok": 22,
       "n": 80
     },
     "judge": {
@@ -42,23 +43,25 @@
   "categories": {
     "simple": {
       "n": 16,
-      "n_scored": 15,
-      "n_answered": 0,
+      "n_scored": 16,
+      "n_answered": 15,
       "n_judged": 0,
-      "recall@1": 0.9333,
+      "recall@1": 0.9375,
       "recall@3": 1.0,
       "recall@5": 1.0,
       "recall@10": 1.0,
-      "mrr": 0.9667,
+      "mrr": 0.9688,
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "exact-term": {
       "n": 12,
       "n_scored": 12,
-      "n_answered": 0,
+      "n_answered": 7,
       "n_judged": 0,
       "recall@1": 0.5833,
       "recall@3": 0.9167,
@@ -68,7 +71,9 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "multi-doc": {
       "n": 12,
@@ -83,11 +88,13 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "conflicting-versions": {
       "n": 10,
-      "n_scored": 9,
+      "n_scored": 10,
       "n_answered": 0,
       "n_judged": 0,
       "recall@1": 1.0,
@@ -98,7 +105,9 @@
       "superseded_hit@5": 0.0,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "unanswerable": {
       "n": 10,
@@ -113,11 +122,13 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "access-denied": {
       "n": 10,
-      "n_scored": 4,
+      "n_scored": 10,
       "n_answered": 0,
       "n_judged": 0,
       "recall@1": 1.0,
@@ -128,103 +139,102 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "injection": {
       "n": 10,
-      "n_scored": 0,
+      "n_scored": 8,
       "n_answered": 0,
       "n_judged": 0,
-      "recall@1": null,
-      "recall@3": null,
-      "recall@5": null,
-      "recall@10": null,
-      "mrr": null,
+      "recall@1": 0.8125,
+      "recall@3": 0.875,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.9,
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "overall": {
       "n": 80,
-      "n_scored": 52,
-      "n_answered": 0,
+      "n_scored": 68,
+      "n_answered": 22,
       "n_judged": 0,
-      "recall@1": 0.7596,
-      "recall@3": 0.9327,
+      "recall@1": 0.7941,
+      "recall@3": 0.9338,
       "recall@5": 1.0,
       "recall@10": 1.0,
-      "mrr": 0.9327,
+      "mrr": 0.9368,
       "superseded_hit@5": 0.0,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     }
   },
   "latency": {
     "retrieval": {
-      "n": 62,
-      "median": 7.411,
-      "p95": 12.66
+      "n": 80,
+      "median": 7.506,
+      "p95": 13.672
     },
     "rerank": {
-      "n": 62,
+      "n": 80,
       "median": 6.371,
-      "p95": 9.77
+      "p95": 10.088
+    },
+    "generate": {
+      "n": 22,
+      "median": 4.741,
+      "p95": 18.549
     }
   },
+  "answers": {},
   "behavior_failures": [],
   "retrieval_misses": [],
   "errors": [
     {
-      "id": "q015",
-      "stage": "retrieval",
-      "message": "APIConnectionError: Connection error."
+      "id": "q012",
+      "stage": "generate",
+      "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     },
     {
-      "id": "q043",
-      "stage": "retrieval",
-      "message": "APIConnectionError: Connection error."
+      "id": "q024",
+      "stage": "generate",
+      "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     },
     {
-      "id": "q064",
-      "stage": "retrieval",
-      "message": "RateLimitError: Error code: 429 - {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/ge"
+      "id": "q025",
+      "stage": "generate",
+      "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     },
     {
-      "id": "q065",
-      "stage": "retrieval",
-      "message": "RateLimitError: Error code: 429 - {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/ge"
-    },
-    {
-      "id": "q067",
-      "stage": "retrieval",
-      "message": "RateLimitError: Error code: 429 - {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/ge"
-    },
-    {
-      "id": "q068",
-      "stage": "retrieval",
-      "message": "RateLimitError: Error code: 429 - {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/ge"
-    },
-    {
-      "id": "q069",
-      "stage": "retrieval",
-      "message": "RateLimitError: Error code: 429 - {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/ge"
+      "id": "q026",
+      "stage": "generate",
+      "message": "RateLimitError: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/g"
     }
   ],
   "comparison": {
     "against": "phase07",
     "deltas": {
       "simple": {
-        "recall@1": -0.0042,
+        "recall@1": 0.0,
         "recall@3": 0.0,
         "recall@5": 0.0,
         "recall@10": 0.0,
-        "mrr": -0.0021,
+        "mrr": 0.0,
         "superseded_hit@5": null,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       },
       "exact-term": {
         "recall@1": 0.0833,
@@ -235,7 +245,9 @@
         "superseded_hit@5": null,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       },
       "multi-doc": {
         "recall@1": 0.0,
@@ -246,7 +258,9 @@
         "superseded_hit@5": null,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       },
       "conflicting-versions": {
         "recall@1": 0.5,
@@ -257,7 +271,9 @@
         "superseded_hit@5": -1.0,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       },
       "unanswerable": {
         "recall@1": null,
@@ -268,7 +284,9 @@
         "superseded_hit@5": null,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       },
       "access-denied": {
         "recall@1": 0.1,
@@ -279,39 +297,45 @@
         "superseded_hit@5": null,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       },
       "injection": {
-        "recall@1": null,
-        "recall@3": null,
-        "recall@5": null,
-        "recall@10": null,
-        "mrr": null,
+        "recall@1": 0.125,
+        "recall@3": 0.0625,
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "mrr": 0.0625,
         "superseded_hit@5": null,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       },
       "overall": {
-        "recall@1": 0.0831,
-        "recall@3": 0.0136,
+        "recall@1": 0.1176,
+        "recall@3": 0.0147,
         "recall@5": 0.0294,
         "recall@10": 0.0,
-        "mrr": 0.0592,
+        "mrr": 0.0633,
         "superseded_hit@5": -1.0,
         "faithfulness": null,
         "relevance": null,
-        "behavior_pass": null
+        "behavior_pass": null,
+        "refused": null,
+        "cited": null
       }
     },
     "latency": {
       "retrieval": {
-        "median": -0.23,
-        "p95": 0.49
+        "median": -0.135,
+        "p95": 1.502
       },
       "rerank": {
         "median": -0.394,
-        "p95": -0.839
+        "p95": -0.521
       }
     }
   }

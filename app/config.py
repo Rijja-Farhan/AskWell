@@ -8,7 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -76,12 +76,27 @@ class Settings(BaseSettings):
     # "prefer_active" ranks them below their family's active version, "all" keeps everything
     version_policy: Literal["active_only", "prefer_active", "all"] = "active_only"
 
+    # Answers: "grounded" answers only from numbered sources with [n] citations and refuses
+    # with a fixed reply when evidence is weak; "baseline" is the Phase 3 minimal prompt.
+    # refusal_min_score: with the cross-encoder, refuse without an LLM call when the top chunk
+    # scores below it (bge-reranker logit); None disables the gate.
+    answer_mode: Literal["baseline", "grounded"] = "grounded"
+    refusal_min_score: float | None = -4.0
+
     # Evaluation: report folder, chunks retrieved per eval question, judge model (empty means
     # llm_model) and the minimum seconds between chat calls (free-tier rate limits)
     eval_reports_dir: Path = Path("eval/reports")
     eval_retrieval_k: int = 10
     eval_judge_model: str = ""
     eval_chat_interval: float = 6.0
+
+    @field_validator("refusal_min_score", mode="before")
+    @classmethod
+    def _score_off(cls, value):
+        """`REFUSAL_MIN_SCORE=none` (or `null`) disables the gate."""
+        if isinstance(value, str) and value.strip().lower() in ("none", "null"):
+            return None
+        return value
 
 
 @lru_cache

@@ -2,8 +2,8 @@
 
 Usage: python scripts/ask.py "question" [-k N] [--show-chunks] [--department D ...]
        [--as-of YYYY-MM-DD] [--version-policy active_only|prefer_active|all]
-Exit codes: 0 answered (or no chunk matched the filters), 1 other provider error, 2 setup
-problem (API key or index), 3 provider unavailable after retries.
+Exit codes: 0 answered or refused (including no chunk matching the filters), 1 other provider
+error, 2 setup problem (API key or index), 3 provider unavailable after retries.
 """
 
 import argparse
@@ -59,10 +59,10 @@ def main() -> int:
         llm = get_llm(settings)
         reranker = get_reranker(settings)
         chunks = retrieve(args.question, args.k, embedder, settings, reranker, filters)
-        if not chunks:
+        if not chunks and settings.answer_mode == "baseline":
             print("No document matches these filters, so there is nothing to answer from.")
             return 0
-        result = answer_from_chunks(args.question, chunks, llm)
+        result = answer_from_chunks(args.question, chunks, llm, settings)
     except (MissingAPIKeyError, IndexNotReadyError) as exc:
         print(exc, file=sys.stderr)
         return 2
@@ -78,6 +78,19 @@ def main() -> int:
         return 1
 
     print(result.answer.strip())
+    if result.refused:
+        reasons = {
+            "no_context": "no document matches the question and filters",
+            "low_score": f"best match scored below {settings.refusal_min_score}, no LLM call",
+            "model": "the retrieved sources do not answer it",
+        }
+        print(f"\n(Refused: {result.refusal_reason}, {reasons[result.refusal_reason or 'model']})")
+    elif result.citations:
+        print("\nSources:")
+        for c in result.citations:
+            print(f"  [{c.number}] {c.title}, {c.section} ({c.doc_id})")
+    if result.invalid_citations:
+        print(f"\n({result.invalid_citations} invalid citation marker(s) removed)")
     method = settings.retrieval_mode
     if reranker:
         method += f", reranked by {reranker.model}"

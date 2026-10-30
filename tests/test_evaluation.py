@@ -19,7 +19,7 @@ from app.evaluation.runner import (
     run_config,
     run_eval,
 )
-from app.rag.answer import answer_from_chunks, answer_question
+from app.rag.answer import REFUSAL_TEXT, answer_from_chunks, answer_question
 from app.rag.retrieve import retrieve
 from app.rag.store import build_index, resolve
 from tests.conftest import ROOT, FakeEmbedder, FakeLLM, make_settings
@@ -286,7 +286,7 @@ def test_answer_from_chunks_matches_answer_question(indexed):
     question = "How many PTO days can I carry over?"
     via_question = answer_question(question, 5, FakeEmbedder(), FakeLLM(), indexed)
     chunks = retrieve(question, 5, FakeEmbedder(), indexed)
-    assert answer_from_chunks(question, chunks, FakeLLM()) == via_question
+    assert answer_from_chunks(question, chunks, FakeLLM(), indexed) == via_question
 
 
 # ---------------------------------------------------------------- CLI
@@ -349,3 +349,66 @@ def test_hybrid_config_records_fusion_settings(settings):
         settings.model_copy(update={"retrieval_mode": "dense"}), resolve(settings.eval_set_path)
     )
     assert "bm25_weight" not in dense
+
+
+# ---------------------------------------------------------------- Phase 9: grounded answers
+
+
+def test_run_config_answer_fields(settings):
+    path = resolve(settings.eval_set_path)
+    grounded = run_config(settings, path)
+    assert grounded["answer_mode"] == "grounded"
+    assert grounded["answer_version"] == 1 and grounded["refusal_min_score"] == -4.0
+    baseline = run_config(settings.model_copy(update={"answer_mode": "baseline"}), path)
+    assert baseline["answer_mode"] == "baseline"
+    assert "answer_version" not in baseline and "refusal_min_score" not in baseline
+
+
+def test_pre_phase9_manifest_resumes_only_as_baseline(settings):
+    baseline = settings.model_copy(update={"answer_mode": "baseline"})
+    run_dir = settings.eval_reports_dir / "phase08"
+    run_dir.mkdir(parents=True)
+    config = run_config(baseline, resolve(baseline.eval_set_path))
+    del config["answer_mode"]  # as written before Phase 9
+    (run_dir / "manifest.json").write_text(json.dumps({"name": "phase08", "config": config}))
+
+    assert run_eval(
+        "phase08", ALL, FakeEmbedder(), FakeLLM(), judge_llm(), baseline, limit=2
+    ).complete
+    with pytest.raises(ConfigMismatchError, match="answer_mode"):
+        run_eval("phase08", ["retrieval"], FakeEmbedder(), None, None, settings, limit=2)
+
+
+def test_grounded_run_records_refusals_and_citations(settings):
+    class CitingLLM(FakeLLM):
+        def complete(self, system, user):
+            return "Per policy [1][4]."
+
+    run_eval("g", ALL, FakeEmbedder(), CitingLLM(), judge_llm(), settings, limit=3)
+    for r in load_results(settings.eval_reports_dir / "g" / "results.jsonl").values():
+        assert r.refused is False and r.refusal_reason is None
+        assert len(r.citations) == 2 and r.invalid_citations == 0  # [1] and [4] both exist
+
+
+def test_report_has_refused_and_cited_columns(settings):
+    refusing = FakeLLM(REFUSAL_TEXT)
+    summary = run_eval("r", ALL, FakeEmbedder(), refusing, judge_llm(), settings, limit=5)
+    overall = summary.report["categories"]["overall"]
+    assert overall["refused"] == 1.0 and overall["cited"] is None
+    answers = summary.report["answers"]
+    assert answers["false_refusals"]["of"] == 5 and answers["invalid_citations"] == 0
+    assert {x["reason"] for x in answers["refusals"]} == {"model"}
+    text = (settings.eval_reports_dir / "r" / "report.md").read_text()
+    assert "Refused" in text and "Cited" in text and "False refusals" in text
+
+
+def test_old_results_without_refusal_fields_load(settings):
+    run_eval("o", ALL, FakeEmbedder(), FakeLLM(), judge_llm(), settings, limit=2)
+    path = settings.eval_reports_dir / "o" / "results.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    for row in rows:
+        for key in ("refused", "refusal_reason", "citations", "invalid_citations"):
+            del row[key]
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    loaded = load_results(path)
+    assert all(r.refused is None and r.citations is None for r in loaded.values())

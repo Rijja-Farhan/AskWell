@@ -9,7 +9,7 @@ from app.dataset.schemas import Category
 from app.evaluation.metrics import first_gold_rank
 
 RETRIEVAL_KEYS = ("recall@1", "recall@3", "recall@5", "recall@10", "mrr", "superseded_hit@5")
-ANSWER_KEYS = ("faithfulness", "relevance", "behavior_pass")
+ANSWER_KEYS = ("faithfulness", "relevance", "behavior_pass", "refused", "cited")
 METRIC_KEYS = RETRIEVAL_KEYS + ANSWER_KEYS
 STAGE_NAMES = ("retrieval", "generate", "judge")
 LATENCY_STAGES = ("retrieval", "rerank", "generate", "judge")  # rerank is part of retrieval
@@ -23,6 +23,8 @@ COLUMNS = {
     "faithfulness": "Faith",
     "relevance": "Rel",
     "behavior_pass": "Behav",
+    "refused": "Refused",
+    "cited": "Cited",
 }
 
 
@@ -45,7 +47,33 @@ def summarize(results: list) -> dict:
     row["faithfulness"] = mean([r.judge.faithfulness for r in judged])
     row["relevance"] = mean([r.judge.relevance for r in judged])
     row["behavior_pass"] = mean([r.judge.behavior_ok for r in judged])
+    # Grounded answers only: share refused, and share of non-refused with a valid citation
+    grounded = [r for r in results if r.ok("generate") and r.refused is not None]
+    row["refused"] = mean([r.refused for r in grounded])
+    row["cited"] = mean([bool(r.citations) for r in grounded if not r.refused])
     return row
+
+
+def summarize_answers(results: list) -> dict:
+    """Refusal details: false refusals on `answer` questions, refusals by reason, and the
+    invalid citation markers removed. Empty when no answer was made in grounded mode."""
+    grounded = [r for r in results if r.ok("generate") and r.refused is not None]
+    if not grounded:
+        return {}
+    answerable = [r for r in results if r.expected_behavior == "answer"]
+    return {
+        "false_refusals": {
+            "n": sum(bool(r.refused) for r in answerable if r.ok("generate")),
+            "of": len(answerable),
+            "ids": [r.id for r in answerable if r.refused],
+        },
+        "refusals": [
+            {"id": r.id, "category": r.category, "reason": r.refusal_reason}
+            for r in grounded
+            if r.refused
+        ],
+        "invalid_citations": sum(r.invalid_citations or 0 for r in grounded),
+    }
 
 
 def percentile(values: list[float], p: float) -> float:
@@ -86,6 +114,7 @@ def build_report(
         },
         "categories": by_category,
         "latency": summarize_latency(results),
+        "answers": summarize_answers(results),
         "behavior_failures": [
             {"id": r.id, "category": r.category, "reason": r.judge.reason}
             for r in results
@@ -184,6 +213,12 @@ def render_markdown(report: dict) -> str:
         f"{config['retrieval_top_k']}",
         f"- Chat model `{config['chat_model']}`, judge model `{config['judge_model']}`",
         f"- Retrieval mode {retrieval_label(config)}",
+        f"- Answer mode `{config.get('answer_mode', 'baseline')}`"
+        + (
+            f" (v{config['answer_version']}, refusal gate {config['refusal_min_score']})"
+            if config.get("answer_mode") == "grounded"
+            else ""
+        ),
         "- Stages done: "
         + ", ".join(f"{s} {v['ok']}/{v['n']}" for s, v in report["stages"].items()),
     ]
@@ -219,6 +254,28 @@ def render_markdown(report: dict) -> str:
             + " | ".join(values)
             + " |"
         )
+
+    answers = report.get("answers")
+    if answers:
+        fr = answers["false_refusals"]
+        lines += [
+            "",
+            "## Refusals",
+            "",
+            f"`Refused` = share of answers that are the fixed refusal reply; `Cited` = share of "
+            f"non-refused answers with at least one valid citation. False refusals on `answer` "
+            f"questions: {fr['n']} of {fr['of']}"
+            + (f" ({', '.join(fr['ids'])})" if fr["ids"] else "")
+            + f". Invalid citation markers removed: {answers['invalid_citations']}.",
+            "",
+        ]
+        if answers["refusals"]:
+            lines += ["| id | category | reason |", "|---|---|---|"]
+            lines += [
+                f"| {x['id']} | {x['category']} | {x['reason']} |" for x in answers["refusals"]
+            ]
+        else:
+            lines.append("No refusals.")
 
     lines += ["", "## Latency (seconds per question)", ""]
     if report.get("latency"):

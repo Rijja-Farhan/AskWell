@@ -22,7 +22,8 @@
     "rerank_onnx_file": "onnx/model.onnx",
     "rerank_candidates": 40,
     "rerank_version": 1,
-    "version_policy": "all"
+    "version_policy": "all",
+    "answer_mode": "baseline"
   },
   "stages": {
     "retrieval": {
@@ -52,7 +53,9 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "exact-term": {
       "n": 12,
@@ -67,7 +70,9 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "multi-doc": {
       "n": 12,
@@ -82,7 +87,9 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "conflicting-versions": {
       "n": 10,
@@ -97,7 +104,9 @@
       "superseded_hit@5": 1.0,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "unanswerable": {
       "n": 10,
@@ -112,7 +121,9 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "access-denied": {
       "n": 10,
@@ -127,7 +138,9 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "injection": {
       "n": 10,
@@ -142,7 +155,9 @@
       "superseded_hit@5": null,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     },
     "overall": {
       "n": 80,
@@ -157,7 +172,9 @@
       "superseded_hit@5": 1.0,
       "faithfulness": null,
       "relevance": null,
-      "behavior_pass": null
+      "behavior_pass": null,
+      "refused": null,
+      "cited": null
     }
   },
   "latency": {
@@ -172,6 +189,7 @@
       "p95": 10.609
     }
   },
+  "answers": {},
   "behavior_failures": [],
   "retrieval_misses": [
     {

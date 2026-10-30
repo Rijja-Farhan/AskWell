@@ -22,7 +22,7 @@ from app.dataset.schemas import EvalQuestion
 from app.evaluation import metrics
 from app.evaluation.judge import JudgeError, judge_answer
 from app.evaluation.report import build_report, load_report, write_report
-from app.rag.answer import answer_from_chunks
+from app.rag.answer import ANSWER_VERSION, answer_from_chunks
 from app.rag.bm25 import BM25_VERSION
 from app.rag.embeddings import Embedder
 from app.rag.filters import FILTER_VERSION
@@ -41,11 +41,13 @@ MAX_CONSECUTIVE_UNAVAILABLE = 3
 # Runs made before Phase 6 have no retrieval_mode; they used dense retrieval.
 # Runs made before Phase 7 have no reranker; they were not reranked.
 # Runs made before Phase 8 have no version_policy; they kept every version.
+# Runs made before Phase 9 have no answer_mode; they used the minimal baseline prompt.
 MANIFEST_DEFAULTS = {
     "chunk_strategy": "fixed",
     "retrieval_mode": "dense",
     "reranker": "none",
     "version_policy": "all",
+    "answer_mode": "baseline",
 }
 
 Stage = Literal["retrieval", "generate", "judge"]
@@ -88,6 +90,10 @@ class QuestionResult(BaseModel):
     metrics: dict[str, float | bool | None] = {}
     answer: str | None = None
     model: str | None = None
+    refused: bool | None = None  # None: not answered yet, or an answer made before Phase 9
+    refusal_reason: str | None = None
+    citations: list[str] | None = None  # chunk ids of the valid cited sources
+    invalid_citations: int | None = None
     judge: JudgeFields | None = None
     # Seconds per stage, excluding throttle waits. "rerank" is the reranker's share of
     # "retrieval" (which times the whole retrieve() call).
@@ -209,6 +215,12 @@ def run_config(settings: Settings, eval_set: Path) -> dict:
     config["version_policy"] = settings.version_policy
     if settings.version_policy != "all":
         config["filter_version"] = FILTER_VERSION
+    config["answer_mode"] = settings.answer_mode
+    if settings.answer_mode == "grounded":
+        config |= {
+            "answer_version": ANSWER_VERSION,
+            "refusal_min_score": settings.refusal_min_score,
+        }
     return config
 
 
@@ -354,8 +366,12 @@ def run_eval(
         chunks = load_chunks(collection, r.retrieved[: settings.retrieval_top_k])
         if stage == "generate":
             assert chat["generate"] is not None, "the generate stage needs an LLM"
-            result = answer_from_chunks(q.question, chunks, chat["generate"])
+            result = answer_from_chunks(q.question, chunks, chat["generate"], settings)
             r.answer, r.model = result.answer, result.model
+            if settings.answer_mode == "grounded":
+                r.refused, r.refusal_reason = result.refused, result.refusal_reason
+                r.citations = [c.chunk_id for c in result.citations]
+                r.invalid_citations = result.invalid_citations
         else:
             assert chat["judge"] is not None, "the judge stage needs a judge LLM"
             verdict = judge_answer(q.question, r.answer or "", chunks, q, chat["judge"])

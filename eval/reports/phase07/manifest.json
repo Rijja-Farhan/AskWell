@@ -22,6 +22,7 @@
     "rerank_onnx_file": "onnx/model.onnx",
     "rerank_candidates": 40,
     "rerank_version": 1,
-    "version_policy": "all"
+    "version_policy": "all",
+    "answer_mode": "baseline"
   }
 }

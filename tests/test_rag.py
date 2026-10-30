@@ -146,6 +146,7 @@ def test_retrieve_with_other_embedding_model(indexed):
 
 def test_answer_question_prompt(indexed):
     settings, _ = indexed
+    settings = settings.model_copy(update={"answer_mode": "baseline"})
     llm = FakeLLM("The hotline is 1-800-555-0142.")
     question = "What is the phone number for the ethics hotline?"
     result = answer_question(question, 4, FakeEmbedder(), llm, settings)

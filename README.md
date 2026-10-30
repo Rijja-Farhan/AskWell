@@ -67,6 +67,37 @@ python scripts/ask.py "How many days a week can I work from home?" --version-pol
 
 `--as-of` picks, per document, the version in force on that date and replaces the version policy. `--show-chunks` prints each hit's version, status and effective date. If no document matches, `ask.py` says so and makes no LLM call.
 
+## Grounded answers
+
+`ANSWER_MODE=grounded` (default) answers only from the retrieved chunks. They reach the LLM as numbered sources (`[1] title | section | doc_id | version | effective date`), and the model must put a `[n]` marker after each claim. Markers that point to no source are removed and counted (`invalid_citations`); the valid ones become `Citation` objects (`number, chunk_id, doc_id, title, section`) in first-cited order. When the sources do not answer, the model replies with the fixed `REFUSAL_TEXT` ("I don't know. ...").
+
+Two refusals happen without any LLM call: no chunks at all (`no_context`, for example filters that match nothing), and `REFUSAL_MIN_SCORE` (default `-4.0`): with `RERANKER=cross-encoder`, a top chunk whose reranker score is below it means the evidence is too weak (`low_score`). `REFUSAL_MIN_SCORE=none` disables the gate; it is skipped when `RERANKER=none`, because first-stage scores are not comparable. A reply equal to `REFUSAL_TEXT` is marked `model`. `ANSWER_MODE=baseline` keeps the Phase 3 minimal prompt, with no citations or refusals.
+
+```text
+$ python scripts/ask.py "<answerable question>"
+<answer text with [1] and [2] markers>
+
+Sources:
+  [1] <title>, <section> (<doc_id>)
+  [2] <title>, <section> (<doc_id>)
+
+Retrieved (hybrid, reranked by BAAI/bge-reranker-base, versions active_only):
+  1. ...
+
+$ python scripts/ask.py "What does error NX-6100 mean?"
+I don't know. The company documents I can access do not answer this question. Please check with the relevant department.
+
+(Refused: low_score, best match scored below -4.0, no LLM call)
+
+Retrieved (hybrid, reranked by BAAI/bge-reranker-base, versions active_only):
+  1. it-mtg-001-v1::0004 (-5.936)
+  ...
+```
+
+Only cited sources are listed under `Sources:`. `ask.py` exits 0 for refusals.
+
+The same `answer_from_chunks` serves the CLI and the eval runner. Access rules and prompt-injection defenses are not part of this phase.
+
 ## Evaluate
 
 Scores the pipeline on the 80-question eval set and writes `manifest.json`, `results.jsonl`, `report.json` and `report.md` to `eval/reports/<name>/`.
@@ -78,23 +109,23 @@ python scripts/run_eval.py --name my-change --compare baseline  # add deltas ver
 python scripts/run_eval.py --name test --limit 5 --fresh        # quick check on 5 questions
 ```
 
-Reports so far: `baseline` (Phase 3, fixed chunks, dense), `phase05` (structured chunks, dense), `phase06` (structured chunks, hybrid) and `phase07` (hybrid + reranker) and `phase08` (+ active versions only). Reports include median and p95 latency per stage. Resume older runs with the settings they were made with; runs before Phase 7 were not reranked and runs before Phase 8 kept every version:
+Reports so far: `baseline` (Phase 3, fixed chunks, dense), `phase05` (structured chunks, dense), `phase06` (structured chunks, hybrid) and `phase07` (hybrid + reranker) and `phase08` (+ active versions only, minimal prompt) and `phase09` (+ grounded answers). Reports include median and p95 latency per stage and, for grounded runs, the `Refused` and `Cited` columns plus a false-refusal count. Resume older runs with the settings they were made with; runs before Phase 7 were not reranked, runs before Phase 8 kept every version and runs before Phase 9 used the minimal prompt (`ANSWER_MODE=baseline`):
 
 ```bash
-VERSION_POLICY=all python scripts/run_eval.py --name phase07
-RERANKER=none VERSION_POLICY=all python scripts/run_eval.py --name phase06
-RERANKER=none VERSION_POLICY=all RETRIEVAL_MODE=dense python scripts/run_eval.py --name phase05
-VECTOR_COLLECTION=askwell_baseline CHUNK_STRATEGY=fixed RETRIEVAL_MODE=dense RERANKER=none VERSION_POLICY=all \
+ANSWER_MODE=baseline VERSION_POLICY=all python scripts/run_eval.py --name phase07
+ANSWER_MODE=baseline RERANKER=none VERSION_POLICY=all python scripts/run_eval.py --name phase06
+ANSWER_MODE=baseline RERANKER=none VERSION_POLICY=all RETRIEVAL_MODE=dense python scripts/run_eval.py --name phase05
+ANSWER_MODE=baseline VECTOR_COLLECTION=askwell_baseline CHUNK_STRATEGY=fixed RETRIEVAL_MODE=dense RERANKER=none VERSION_POLICY=all \
   LLM_MODEL=gemini-3-flash-preview python scripts/run_eval.py --name baseline
 ```
 
 `eval/probes/exact_terms.jsonl` holds 24 identifier lookups ("NX-4020", "GL-7100 account") that the main set does not cover. Score them with `EVAL_SET_PATH`:
 
 ```bash
-EVAL_SET_PATH=eval/probes/exact_terms.jsonl RERANKER=none VERSION_POLICY=all RETRIEVAL_MODE=dense python scripts/run_eval.py --name probe06_dense --stages retrieval
-EVAL_SET_PATH=eval/probes/exact_terms.jsonl RERANKER=none VERSION_POLICY=all python scripts/run_eval.py --name probe06_hybrid --stages retrieval --compare probe06_dense
-EVAL_SET_PATH=eval/probes/exact_terms.jsonl VERSION_POLICY=all python scripts/run_eval.py --name probe07 --stages retrieval --compare probe06_hybrid
-EVAL_SET_PATH=eval/probes/exact_terms.jsonl python scripts/run_eval.py --name probe08 --stages retrieval --compare probe07
+EVAL_SET_PATH=eval/probes/exact_terms.jsonl ANSWER_MODE=baseline RERANKER=none VERSION_POLICY=all RETRIEVAL_MODE=dense python scripts/run_eval.py --name probe06_dense --stages retrieval
+EVAL_SET_PATH=eval/probes/exact_terms.jsonl ANSWER_MODE=baseline RERANKER=none VERSION_POLICY=all python scripts/run_eval.py --name probe06_hybrid --stages retrieval --compare probe06_dense
+EVAL_SET_PATH=eval/probes/exact_terms.jsonl ANSWER_MODE=baseline VERSION_POLICY=all python scripts/run_eval.py --name probe07 --stages retrieval --compare probe06_hybrid
+EVAL_SET_PATH=eval/probes/exact_terms.jsonl ANSWER_MODE=baseline python scripts/run_eval.py --name probe08 --stages retrieval --compare probe07
 ```
 
 Progress is saved after every question: rerunning the same command skips finished work, so an interrupted run (exit 3, provider unavailable) resumes later. Chat calls are spaced `EVAL_CHAT_INTERVAL` seconds apart for free-tier limits. A run keeps its config in `manifest.json`; changing the models, chunk, retrieval, reranker or version-policy settings needs `--fresh` or a new `--name`. Use `LLM_MODEL=...` or `EVAL_JUDGE_MODEL=...` on the command line to try other models.

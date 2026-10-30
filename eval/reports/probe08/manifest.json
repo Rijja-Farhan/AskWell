@@ -23,6 +23,7 @@
     "rerank_candidates": 40,
     "rerank_version": 1,
     "version_policy": "active_only",
-    "filter_version": 1
+    "filter_version": 1,
+    "answer_mode": "baseline"
   }
 }
