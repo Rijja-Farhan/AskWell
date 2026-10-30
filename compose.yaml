@@ -1,0 +1,95 @@
+# Askwell: API + UI, one-shot indexer, Redis cache, Jaeger tracing.
+#   cp .env.example .env   # set GEMINI_API_KEY or OPENAI_API_KEY (the only required value)
+#   docker compose up --build
+# API and UI: http://localhost:8000 (/ui/, /docs). Traces: http://localhost:16686 (Jaeger).
+#
+# The vector DB is embedded Chroma on the `chroma_db` volume (single writer): the indexer
+# finishes before the api starts, and the api is the only process that touches it afterwards.
+# If the indexer exits with "API_KEY is not set" the api never starts: add the key to .env and
+# run `docker compose up` again (it does not retry by itself).
+
+x-askwell: &askwell
+  build: .
+  image: askwell:local
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    # environment beats env_file, so a copied .env.example (API_HOST=127.0.0.1) cannot make the
+    # container unreachable
+    API_HOST: 0.0.0.0
+    CACHE_BACKEND: redis
+    REDIS_URL: redis://redis:6379/0
+    OTLP_ENDPOINT: http://tracing:4318
+
+services:
+  indexer:
+    <<: *askwell
+    # Incremental: embeds only new or changed documents (0 on a restart). Exit codes: 0 ok,
+    # 2 missing API key, 3 provider unavailable. Never restarted.
+    command: ["python", "scripts/build_index.py"]
+    restart: "no"
+    volumes:
+      - chroma_db:/app/chroma_db
+
+  api:
+    <<: *askwell
+    # Published on loopback only: X-User-Id is a demo switch, not authentication.
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - chroma_db:/app/chroma_db
+      - model_cache:/app/.cache/models
+      - traces:/app/traces
+    depends_on:
+      indexer:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      tracing:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=4)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # /health is liveness (no model load); the generous start period covers a slow first boot.
+      # The ~1.1 GB reranker downloads on the first /chat, not at startup.
+      start_period: 300s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    # A pure cache: no persistence, bounded memory, least-recently-used eviction.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  tracing:
+    image: jaegertracing/all-in-one:1.62.0
+    # In-memory storage; OTLP/HTTP on 4318 inside the network, UI on loopback 16686.
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      SPAN_STORAGE_TYPE: memory
+    ports:
+      - "127.0.0.1:16686:16686"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:14269/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  chroma_db:
+  model_cache:
+  traces:

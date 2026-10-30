@@ -18,11 +18,13 @@ value goes into the key.
 
 Values are stored as deep copies and handed out as deep copies, so a caller cannot poison the
 cache. Keys are SHA-256 digests: question text never appears in a key or a log line. The
-`Cache` protocol is all a backend needs to implement (Redis in Phase 17).
+`Cache` protocol is all a backend needs to implement: `LRUTTLCache` (in-process, default) and
+`RedisCache` (`cache_backend="redis"`, shared across workers and restarts) both do.
 """
 
 import hashlib
 import json
+import logging
 import os
 import threading
 import time
@@ -47,6 +49,8 @@ from app.rag.rerank import RERANK_VERSION, Reranker
 from app.rag.retrieve import RetrievedChunk, retrieve
 from app.rag.sanitize import INJECTION_VERSION
 from app.rag.store import open_collection, resolve
+
+log = logging.getLogger("askwell.cache")
 
 
 class Cache(Protocol):
@@ -123,6 +127,142 @@ class NullCache:
         return {"hits": 0, "misses": 0, "size": 0}
 
 
+# --- Redis backend ------------------------------------------------------------------------
+
+
+def encode_value(value: Any) -> str:
+    """JSON for the three value types a layer stores: an embedding vector (sequence of floats),
+    retrieval results (sequence of `RetrievedChunk`) and an `Answer`. Explicit tags instead of
+    Python object serialization: Redis is a network service, and loading attacker-writable
+    bytes that way runs code.
+    Python's JSON float repr round-trips exactly, so a decoded value equals the stored one."""
+    if isinstance(value, Answer):
+        body: dict[str, Any] = {"t": "answer", "v": value.model_dump(mode="json")}
+    elif isinstance(value, (list, tuple)) and all(isinstance(c, RetrievedChunk) for c in value):
+        body = {"t": "chunks", "v": [c.model_dump(mode="json") for c in value]}
+    elif isinstance(value, (list, tuple)) and all(isinstance(x, (int, float)) for x in value):
+        body = {"t": "vector", "v": list(value)}
+    else:
+        raise TypeError(f"cannot cache a {type(value).__name__}")
+    return json.dumps(body, separators=(",", ":"), ensure_ascii=False)
+
+
+def decode_value(payload: str | bytes) -> Any:
+    """Inverse of `encode_value`; raises ValueError/KeyError/TypeError on anything else."""
+    body = json.loads(payload)
+    kind, data = body["t"], body["v"]
+    if kind == "answer":
+        return Answer.model_validate(data)
+    if kind == "chunks":
+        return tuple(RetrievedChunk.model_validate(c) for c in data)
+    if kind == "vector":
+        return tuple(float(x) for x in data)
+    raise ValueError(f"unknown cache value type {kind!r}")
+
+
+class RedisCache:
+    """A `Cache` layer in Redis: one key per entry under `prefix`, expiring after
+    `ttl_seconds` (Redis does the eviction; `maxmemory` bounds the size).
+
+    Any Redis error is a miss or a no-op: the cache is an optimization, never a reason to fail
+    a request. Warnings carry the exception type only, never a key or value. After an error the
+    layer skips Redis for `retry_seconds`, so a dead server costs one timeout, not one per call.
+    `clear()` deletes only this layer's prefix with SCAN, never FLUSHDB (the database may be
+    shared)."""
+
+    def __init__(
+        self,
+        client: Any,
+        prefix: str,
+        ttl_seconds: float,
+        clock: Callable[[], float] = time.monotonic,
+        retry_seconds: float = 5.0,
+    ) -> None:
+        self.client = client
+        self.prefix = prefix
+        self.ttl_seconds = ttl_seconds
+        self._clock = clock
+        self._retry_seconds = retry_seconds
+        self._down_until = 0.0
+        self._lock = threading.Lock()
+        self._hits = 0
+        self._misses = 0
+
+    def _available(self) -> bool:
+        return self._clock() >= self._down_until
+
+    def _failed(self, op: str, exc: Exception) -> None:
+        self._down_until = self._clock() + self._retry_seconds
+        log.warning("redis cache %s failed (%s)", op, type(exc).__name__)
+
+    def _miss(self) -> None:
+        with self._lock:
+            self._misses += 1
+        return None
+
+    def get(self, key: str) -> Any | None:
+        if not self._available():
+            return self._miss()
+        try:
+            payload = self.client.get(self.prefix + key)
+        except Exception as exc:  # noqa: BLE001 - Redis down/timeouts/etc: a miss
+            self._failed("get", exc)
+            return self._miss()
+        if payload is None:
+            return self._miss()
+        try:
+            value = decode_value(payload)
+        except Exception as exc:  # noqa: BLE001 - corrupt or foreign entry: a miss
+            log.warning("redis cache entry undecodable (%s)", type(exc).__name__)
+            return self._miss()
+        with self._lock:
+            self._hits += 1
+        return value
+
+    def set(self, key: str, value: Any) -> None:
+        ttl = int(self.ttl_seconds)
+        if ttl <= 0 or not self._available():
+            return
+        try:
+            self.client.set(self.prefix + key, encode_value(value), ex=ttl)
+        except Exception as exc:  # noqa: BLE001
+            self._failed("set", exc)
+
+    def _scan(self) -> list[Any]:
+        return list(self.client.scan_iter(match=self.prefix + "*", count=500))
+
+    def clear(self) -> None:
+        if not self._available():
+            return
+        try:
+            keys = self._scan()
+            for i in range(0, len(keys), 500):
+                self.client.delete(*keys[i : i + 500])
+        except Exception as exc:  # noqa: BLE001
+            self._failed("clear", exc)
+
+    def stats(self) -> dict[str, int]:
+        size = 0
+        if self._available():
+            try:
+                size = len(self._scan())
+            except Exception as exc:  # noqa: BLE001
+                self._failed("stats", exc)
+        with self._lock:
+            return {"hits": self._hits, "misses": self._misses, "size": size}
+
+
+def redis_client(settings: Settings) -> Any:
+    """A Redis client from `redis_url`. Imported lazily so the `redis` package is needed only
+    for `cache_backend="redis"`. Short timeouts keep a slow server from stalling requests;
+    the connection is made on first use, so an unreachable server does not break startup."""
+    import redis
+
+    return redis.Redis.from_url(
+        settings.redis_url, socket_timeout=0.5, socket_connect_timeout=0.5, health_check_interval=30
+    )
+
+
 def _canonical(value: Any) -> Any:
     if isinstance(value, BaseModel):
         return value.model_dump(mode="json")
@@ -157,6 +297,19 @@ class CacheBundle:
         if not settings.cache_enabled:
             return cls.disabled()
         ttl = settings.cache_ttl_seconds
+        if settings.cache_backend == "redis":
+            client = redis_client(settings)
+
+            def layer(name: str, entries: int) -> Cache:
+                if entries <= 0:  # same meaning as for the in-process cache: layer off
+                    return NullCache()
+                return RedisCache(client, f"{settings.redis_key_prefix}{name}:", ttl, clock)
+
+            return cls(
+                layer("embeddings", settings.cache_embedding_entries),
+                layer("retrieval", settings.cache_retrieval_entries),
+                layer("answers", settings.cache_answer_entries),
+            )
         return cls(
             LRUTTLCache(settings.cache_embedding_entries, ttl, clock),
             LRUTTLCache(settings.cache_retrieval_entries, ttl, clock),

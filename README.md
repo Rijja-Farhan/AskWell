@@ -150,6 +150,26 @@ curl -s -X POST localhost:8000/ingest -H 'content-type: application/json' -d '{"
 
 Phase 10 added no eval run; the eval documentation below is unchanged.
 
+## Docker
+
+One command brings up the API and UI, a Redis cache and a Jaeger trace UI.
+
+Prerequisites: Docker with Compose v2 and a Gemini or OpenAI API key.
+
+```bash
+cp .env.example .env     # set GEMINI_API_KEY (or OPENAI_API_KEY with LLM_PROVIDER=openai)
+docker compose up --build
+```
+
+- UI: http://localhost:8000/ui/ , API docs: http://localhost:8000/docs
+- Traces: http://localhost:16686 (Jaeger; service `askwell`, search by the `X-Trace-Id` of a response)
+
+Start order: a one-shot `indexer` runs `scripts/build_index.py` (incremental, embeds nothing on a restart) into the `chroma_db` volume, then `api` starts once Redis and Jaeger are healthy. Without an API key the indexer exits with a message and the api does not start; add the key to `.env` and run `docker compose up` again. The first question downloads the ~1.1 GB reranker into the `model_cache` volume (the first answer is slow, later ones are not).
+
+The vector DB is embedded Chroma on the `chroma_db` volume (not a separate server: the single-writer store and the cache's index fingerprint need a local directory). Ports are published on `127.0.0.1` only because `X-User-Id` is a demo switch, not authentication.
+
+`docker compose down` stops the containers and keeps the index, model cache and traces; `docker compose down -v` also deletes those volumes (the next start re-indexes and re-downloads). Langfuse instead of Jaeger: set `OTLP_ENDPOINT` and `OTLP_HEADERS` in `.env` (see `.env.example`). Outside Docker nothing changes: `CACHE_BACKEND=memory` and `OTLP_ENDPOINT` empty are the defaults.
+
 ## Evaluate
 
 Scores the pipeline on the 80-question eval set and writes `manifest.json`, `results.jsonl`, `report.json` and `report.md` to `eval/reports/<name>/`.

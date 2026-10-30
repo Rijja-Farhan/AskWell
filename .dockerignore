@@ -1,0 +1,26 @@
+# Secrets and local state never enter the image
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.venv
+venv
+chroma_db/
+.cache/
+traces/
+Notes/
+prompts/
+.claude/
+tests/
+eval/reports/
+eval/probes/
+data/processed/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.vscode/
+.idea/
+Dockerfile
+compose.yaml

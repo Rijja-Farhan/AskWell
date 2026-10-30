@@ -9,7 +9,7 @@ import logging
 import math
 import threading
 from collections import OrderedDict
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Protocol
@@ -144,25 +144,39 @@ class JsonlTraceStore:
 
 class TraceStores:
     """What the server holds: the ring buffer answers reads at once; the file sink (if any)
-    is written by a background thread."""
+    and the extra sinks (e.g. OTLP export) are fed by one background thread. Reads come from
+    memory and the file sink only; extra sinks are write-only."""
 
-    def __init__(self, memory: MemoryTraceStore, sink: JsonlTraceStore | None = None) -> None:
+    def __init__(
+        self,
+        memory: MemoryTraceStore,
+        sink: JsonlTraceStore | None = None,
+        extra_sinks: Sequence[Any] = (),
+    ) -> None:
         self.memory = memory
         self.sink = sink
+        self.extra_sinks = list(extra_sinks)
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="trace-writer")
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "TraceStores":
         sink = JsonlTraceStore(settings.traces_dir) if settings.trace_to_file else None
-        return cls(MemoryTraceStore(settings.trace_max_entries), sink)
+        extra: list[Any] = []
+        if settings.otlp_endpoint.strip():
+            from app.observability.otlp import OTLPTraceSink  # lazy: needs OpenTelemetry
+
+            otlp = OTLPTraceSink.from_settings(settings)
+            if otlp is not None:
+                extra.append(otlp)
+        return cls(MemoryTraceStore(settings.trace_max_entries), sink, extra)
 
     def add(self, trace: Trace) -> None:
         self.memory.add(trace)
-        if self.sink is not None:
+        for sink in ([self.sink] if self.sink is not None else []) + self.extra_sinks:
             try:
-                self._pool.submit(self.sink.add, trace)
+                self._pool.submit(sink.add, trace)
             except RuntimeError:  # pool already shut down
-                self.sink.add(trace)
+                sink.add(trace)
 
     def flush(self) -> None:
         """Wait for queued file writes (tests, probes, shutdown)."""

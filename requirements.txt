@@ -21,3 +21,8 @@ numpy>=1.26,<3
 # API server (Phase 10)
 fastapi>=0.115,<1
 uvicorn>=0.30,<1
+
+# Redis cache backend and OTLP trace export (Phase 17); both imported lazily
+redis>=5.0,<9
+opentelemetry-sdk>=1.30,<2
+opentelemetry-exporter-otlp-proto-http>=1.30,<2

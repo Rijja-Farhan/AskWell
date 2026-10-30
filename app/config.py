@@ -110,6 +110,12 @@ class Settings(BaseSettings):
     cache_retrieval_entries: int = 512
     cache_answer_entries: int = 256
     cache_ttl_seconds: int = 3600
+    # Phase 17: "redis" keeps the three layers in Redis (shared, survives restarts; entry-count
+    # settings only switch a layer on/off, Redis `maxmemory` bounds the size). Each layer gets
+    # its own key prefix. Any Redis error is a cache miss.
+    cache_backend: Literal["memory", "redis"] = "memory"
+    redis_url: str = "redis://localhost:6379/0"
+    redis_key_prefix: str = "askwell:"
 
     # Tracing (Phase 15): one trace per chat/ingest request with per-stage spans. Traces hold ids,
     # counts, scores and timings only; answer text is stored just when trace_store_text=true.
@@ -119,6 +125,12 @@ class Settings(BaseSettings):
     trace_to_file: bool = True
     traces_dir: Path = Path("traces")
     trace_store_text: bool = False
+    # Phase 17: export finished traces as OpenTelemetry spans over OTLP/HTTP (empty = off).
+    # otlp_endpoint is the base URL (e.g. http://localhost:4318; /v1/traces is appended);
+    # otlp_headers is a comma list of k=v for hosted backends such as Langfuse.
+    otlp_endpoint: str = ""
+    otlp_headers: str = ""
+    otlp_service_name: str = "askwell"
 
     # API server: bind address and CORS origins (comma list; empty disables CORS)
     api_host: str = "127.0.0.1"
