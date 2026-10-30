@@ -2,6 +2,7 @@
 
 import json
 import threading
+from pathlib import Path
 
 import httpx
 import openai
@@ -18,6 +19,12 @@ from app.rag.errors import CorpusParseError
 from app.rag.store import build_index
 from tests.conftest import FakeEmbedder, FakeLLM, make_settings
 
+
+def legacy_settings(tmp_path, **overrides):
+    """Settings for the pre-Phase-12 tests: access filtering off (the RBAC tests turn it on)."""
+    return make_settings(tmp_path, **{"rbac_enabled": False, **overrides})
+
+
 QUESTION = "How many days of annual leave do new employees get?"
 
 
@@ -33,7 +40,7 @@ class FakeReranker:
 
 @pytest.fixture(scope="module")
 def index_settings(corpus, tmp_path_factory):
-    settings = make_settings(
+    settings = legacy_settings(
         tmp_path_factory.mktemp("api_index"), gemini_api_key=SecretStr("sk-test-value")
     )
     build_index(corpus, FakeEmbedder(), settings)
@@ -87,7 +94,7 @@ def test_ready_200(index_settings):
 
 
 def test_ready_503_without_index_or_key(tmp_path):
-    client, _ = make_client(make_settings(tmp_path, gemini_api_key=None))
+    client, _ = make_client(legacy_settings(tmp_path, gemini_api_key=None))
     r = client.get("/health/ready")
     body = r.json()
     assert r.status_code == 503 and body["status"] == "not_ready"
@@ -323,7 +330,7 @@ def test_missing_key_maps_to_503(index_settings):
 
 
 def test_index_not_ready_maps_to_503(tmp_path):
-    client, _ = make_client(make_settings(tmp_path))
+    client, _ = make_client(legacy_settings(tmp_path))
     r = client.post("/chat", json={"question": QUESTION})
     assert r.status_code == 503 and r.json()["error"]["code"] == "index_not_ready"
     r = client.post("/chat/stream", json={"question": QUESTION})
@@ -334,7 +341,7 @@ def test_index_not_ready_maps_to_503(tmp_path):
 
 
 def test_ingest_success_and_idempotent(tmp_path):
-    settings = make_settings(tmp_path)
+    settings = legacy_settings(tmp_path)
     client, _ = make_client(settings)
     r = client.post("/ingest")
     body = r.json()
@@ -353,7 +360,7 @@ def test_ingest_parse_errors_422(tmp_path, monkeypatch):
         raise CorpusParseError(["data/raw/hr/x.pdf: cannot parse"])
 
     monkeypatch.setattr(api_main, "ingest_corpus", broken)
-    client, _ = make_client(make_settings(tmp_path))
+    client, _ = make_client(legacy_settings(tmp_path))
     r = client.post("/ingest")
     assert r.status_code == 422
     assert r.json()["error"]["code"] == "parse_errors"
@@ -382,7 +389,7 @@ def test_concurrent_ingest_gets_409(tmp_path, monkeypatch):
         )
 
     monkeypatch.setattr(api_main, "ingest_corpus", slow)
-    client, _ = make_client(make_settings(tmp_path))
+    client, _ = make_client(legacy_settings(tmp_path))
     first: list = []
     thread = threading.Thread(target=lambda: first.append(client.post("/ingest")))
     thread.start()
@@ -434,7 +441,7 @@ def test_create_app_loads_no_reranker_and_needs_no_key(monkeypatch, tmp_path):
 
     monkeypatch.setattr(rerank.CrossEncoderReranker, "__init__", boom)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    settings = make_settings(tmp_path, reranker="cross-encoder", gemini_api_key=None)
+    settings = legacy_settings(tmp_path, reranker="cross-encoder", gemini_api_key=None)
     app = create_app(settings)
     assert app.title == "Askwell"
     assert TestClient(app).get("/health").status_code == 200  # no lifespan: nothing built
@@ -450,9 +457,9 @@ def test_module_level_app_exists():
 
 def test_cors_disabled_by_default_and_enabled_by_setting(tmp_path):
     headers = {"Origin": "http://ui.test", "Access-Control-Request-Method": "POST"}
-    off, _ = make_client(make_settings(tmp_path))
+    off, _ = make_client(legacy_settings(tmp_path))
     assert "access-control-allow-origin" not in off.options("/chat", headers=headers).headers
-    on, _ = make_client(make_settings(tmp_path, api_cors_origins="http://ui.test, http://b.test"))
+    on, _ = make_client(legacy_settings(tmp_path, api_cors_origins="http://ui.test, http://b.test"))
     assert on.options("/chat", headers=headers).headers["access-control-allow-origin"] == (
         "http://ui.test"
     )
@@ -605,3 +612,243 @@ def test_stream_error_does_not_append(index_settings):
     r = client.post("/chat/stream", json={"question": QUESTION, "session_id": "e"})
     assert parse_sse(r.text)[-1][0] == "error"
     assert client.get("/sessions/e").status_code == 404
+
+
+# --- role-based access (Phase 12) -----------------------------------------------------------
+
+PASSWORD_Q = "What is the minimum password length?"  # q070: IT policy, internal; u05 is public
+USERS = ["u01", "u02", "u03", "u04", "u05", "u06", "u07", "u08", "u09", "u10"]
+
+
+class PasswordReranker:
+    """Scores a chunk high only if it talks about passwords, so a user who cannot read the
+    password policy has nothing above the refusal gate."""
+
+    model = "password-reranker"
+
+    def score(self, question: str, texts: list[str]) -> list[float]:
+        return [5.0 if "minimum" in t.lower() and "password" in t.lower() else -10.0 for t in texts]
+
+
+@pytest.fixture(scope="module")
+def rbac(index_settings):
+    return index_settings.model_copy(update={"rbac_enabled": True})
+
+
+@pytest.fixture(scope="module")
+def doc_levels(rbac):
+    """doc_id -> chunk metadata (one per document) and the user profiles."""
+    from app.rag.store import open_collection
+
+    metas = open_collection(rbac).get(include=["metadatas"])["metadatas"]
+    return {m["doc_id"]: m for m in metas}
+
+
+def readable_ids(uid, doc_levels):
+    from app.rag.access import GUEST, accessible_doc_ids, load_users
+
+    user = GUEST if uid == "guest" else load_users(make_settings(Path("."))).get(uid)
+    return accessible_doc_ids(user, list(doc_levels.values()))
+
+
+def as_user(client, uid):
+    return {"X-User-Id": uid} if uid else {}
+
+
+def test_me_resolves_profiles(rbac):
+    client, _ = make_client(rbac)
+    guest = client.get("/me").json()
+    assert guest["user_id"] == "guest" and guest["clearance"] == "public"
+    assert guest["departments"] == []
+    me = client.get("/me", headers={"X-User-Id": "u01"}).json()
+    assert set(me) == {"user_id", "name", "role", "department", "clearance", "departments"}
+    assert me["user_id"] == "u01" and me["clearance"] == "confidential"
+    assert me["departments"] == ["HR"]
+
+
+def test_unknown_user_is_401(rbac):
+    client, llm = make_client(rbac)
+    for method, path in [("get", "/me"), ("post", "/chat"), ("get", "/sessions/x")]:
+        r = getattr(client, method)(
+            path,
+            headers={"X-User-Id": "nobody"},
+            **({"json": {"question": QUESTION}} if method == "post" else {}),
+        )
+        assert r.status_code == 401 and r.json()["error"]["code"] == "unknown_user"
+    assert llm.calls == []
+
+
+@pytest.mark.parametrize("uid", ["u05", "u02", "u01", "u06", None])
+def test_chat_sources_only_readable(uid, rbac, doc_levels):
+    client, llm = make_client(rbac)
+    readable = readable_ids(uid or "guest", doc_levels)
+    for question in [QUESTION, PASSWORD_Q, "What is the salary range for grade G5?"]:
+        body = client.post(
+            "/chat",
+            json={"question": question, "k": 20, "include_text": True},
+            headers=as_user(client, uid),
+        ).json()
+        assert {s["doc_id"] for s in body["sources"]} <= readable
+        assert {c["doc_id"] for c in body["citations"]} <= readable
+    # the LLM never saw the text of a document the user cannot read
+    prompts = " ".join(user for _, user in llm.calls)
+    from app.rag.store import open_collection
+
+    got = open_collection(rbac).get(include=["documents", "metadatas"])
+    for text, meta in zip(got["documents"], got["metadatas"], strict=True):
+        if meta["doc_id"] not in readable:
+            assert text not in prompts
+
+
+def test_each_user_sees_a_different_slice(rbac, doc_levels):
+    client, _ = make_client(rbac)
+    seen = {}
+    for uid in USERS:
+        body = client.post(
+            "/chat",
+            json={"question": "policy procedure manual", "k": 20},
+            headers=as_user(client, uid),
+        ).json()
+        seen[uid] = {s["doc_id"] for s in body["sources"]}
+        assert seen[uid] <= readable_ids(uid, doc_levels)
+    assert seen["u05"] != seen["u06"]
+
+
+def test_denied_question_gets_standard_refusal(rbac, doc_levels):
+    unreadable = set(doc_levels) - readable_ids("u05", doc_levels)
+    titles = {doc_levels[d]["title"] for d in unreadable}
+    gated = rbac.model_copy(update={"reranker": "cross-encoder"})  # enables the score gate
+    client, llm = make_client(gated, reranker=PasswordReranker())
+    denied = client.post("/chat", json={"question": PASSWORD_Q}, headers={"X-User-Id": "u05"})
+    assert denied.status_code == 200
+    body = denied.json()
+    assert body["refused"] and body["answer"] == REFUSAL_TEXT and llm.calls == []
+    assert body["refusal_reason"] == "low_score"  # same path as any unanswerable question
+    assert not {s["doc_id"] for s in body["sources"]} & unreadable and body["citations"] == []
+    assert not any(t in denied.text for t in titles) and not any(
+        d in denied.text for d in unreadable
+    )
+    # an unanswerable question takes the identical path and has the identical shape
+    other = client.post("/chat", json={"question": "zzzz qqqq xyzzy"}, headers={"X-User-Id": "u05"})
+    assert set(other.json()) == set(body) and other.json()["answer"] == REFUSAL_TEXT
+    # u06 asks the same question and gets the policy as a source
+    client2, _ = make_client(gated, reranker=PasswordReranker())
+    ok = client2.post("/chat", json={"question": PASSWORD_Q, "k": 10}, headers={"X-User-Id": "u06"})
+    assert not ok.json()["refused"]
+    assert "it-pol-001-v2" in {s["doc_id"] for s in ok.json()["sources"]}
+
+
+def test_denied_logs_do_not_name_restricted_documents(rbac, doc_levels, caplog):
+    import logging
+
+    caplog.set_level(logging.INFO)
+    unreadable = set(doc_levels) - readable_ids("u05", doc_levels)
+    client, _ = make_client(rbac, reranker=PasswordReranker())
+    client.post(
+        "/chat", json={"question": PASSWORD_Q, "session_id": "s"}, headers={"X-User-Id": "u05"}
+    )
+    text = caplog.text
+    assert PASSWORD_Q not in text and not any(d in text for d in unreadable)
+
+
+@pytest.mark.parametrize("uid", ["u05", "u02", "u01", "u06", None])
+def test_stream_filters_like_chat(uid, rbac, doc_levels):
+    client, _ = make_client(rbac)
+    readable = readable_ids(uid or "guest", doc_levels)
+    payload = {"question": PASSWORD_Q, "k": 20}
+    chat = client.post("/chat", json=payload, headers=as_user(client, uid)).json()
+    r = client.post("/chat/stream", json=payload, headers=as_user(client, uid))
+    events = parse_sse(r.text)
+    sources = next(d for e, d in events if e == "sources")["sources"]
+    done = next(d for e, d in events if e == "done")
+    assert [s["doc_id"] for s in sources] == [s["doc_id"] for s in chat["sources"]]
+    assert {s["doc_id"] for s in sources} <= readable
+    assert {s["doc_id"] for s in done["sources"]} <= readable
+    assert {c["doc_id"] for c in done["citations"]} <= readable
+
+
+def test_stream_unknown_user_is_401(rbac):
+    client, _ = make_client(rbac)
+    r = client.post("/chat/stream", json={"question": QUESTION}, headers={"X-User-Id": "zz"})
+    assert r.status_code == 401 and r.json()["error"]["code"] == "unknown_user"
+
+
+def test_request_departments_cannot_widen(rbac, doc_levels):
+    client, _ = make_client(rbac)
+    body = client.post(
+        "/chat",
+        json={
+            "question": PASSWORD_Q,
+            "k": 20,
+            "departments": ["HR", "IT", "Operations", "Finance"],
+        },
+        headers={"X-User-Id": "u05"},
+    ).json()
+    assert {s["doc_id"] for s in body["sources"]} <= readable_ids("u05", doc_levels)
+
+
+def test_rewrite_path_is_filtered(rbac, doc_levels):
+    # the rewritten query names restricted content; retrieval still returns readable docs only
+    client, llm = make_client(rbac, llm=ScriptedLLM(rewrite="salary range grade G5 hr table"))
+    h = {"X-User-Id": "u05"}
+    client.post("/chat", json={"question": QUESTION, "session_id": "r"}, headers=h)
+    body = client.post(
+        "/chat", json={"question": "and for that grade?", "session_id": "r", "k": 20}, headers=h
+    ).json()
+    assert llm.rewrite_calls == 1 and body["standalone_query"] == "salary range grade G5 hr table"
+    assert {s["doc_id"] for s in body["sources"]} <= readable_ids("u05", doc_levels)
+
+
+def test_sessions_are_owned_by_their_user(rbac):
+    client, _ = make_client(rbac)
+    a, b = {"X-User-Id": "u01"}, {"X-User-Id": "u02"}
+    client.post("/chat", json={"question": QUESTION, "session_id": "mine"}, headers=a)
+    assert client.get("/sessions/mine", headers=a).status_code == 200
+    assert client.get("/sessions/mine", headers=b).status_code == 404
+    assert client.get("/sessions/mine").status_code == 404  # the guest is another user too
+    assert client.delete("/sessions/mine", headers=b).status_code == 404
+    assert client.get("/sessions/mine", headers=a).status_code == 200  # still there
+    assert client.delete("/sessions/mine", headers=a).status_code == 204
+
+
+def test_same_session_id_gives_independent_histories(rbac):
+    llm = ScriptedLLM()
+    client, _ = make_client(rbac, llm=llm)
+    a, b = {"X-User-Id": "u01"}, {"X-User-Id": "u02"}
+    client.post("/chat", json={"question": QUESTION, "session_id": "s"}, headers=a)
+    client.post("/chat", json={"question": "Other topic entirely", "session_id": "s"}, headers=b)
+    ta = client.get("/sessions/s", headers=a).json()["turns"]
+    tb = client.get("/sessions/s", headers=b).json()["turns"]
+    assert [t["question"] for t in ta] == [QUESTION]
+    assert [t["question"] for t in tb] == ["Other topic entirely"]
+    # u02's first turn had no history of its own, so no rewrite call used u01's turn
+    assert llm.rewrite_calls == 0
+
+
+def test_ingest_is_admin_only(tmp_path, corpus):
+    settings = make_settings(tmp_path, rbac_enabled=True)
+    client, _ = make_client(settings)
+    for uid in [None, "u05", "u02", "u01", "u07"]:
+        r = client.post("/ingest", headers=as_user(client, uid))
+        assert r.status_code == 403 and r.json()["error"]["code"] == "forbidden", uid
+    r = client.post("/ingest", headers={"X-User-Id": "u06"})
+    assert r.status_code == 200 and len(r.json()["added"]) == 52
+
+
+def test_rbac_disabled_restores_unfiltered_behavior(index_settings, doc_levels):
+    client, _ = make_client(index_settings)  # rbac_enabled=False
+    body = client.post(
+        "/chat", json={"question": PASSWORD_Q, "k": 20}, headers={"X-User-Id": "u05"}
+    ).json()
+    ids = {s["doc_id"] for s in body["sources"]}
+    assert ids - readable_ids("u05", doc_levels)  # unreadable documents do appear
+    assert client.post("/chat", json={"question": QUESTION}).status_code == 200
+    assert client.post("/ingest", headers={"X-User-Id": "u05"}).status_code == 200
+
+
+def test_users_file_failure_fails_closed(rbac, tmp_path):
+    settings = rbac.model_copy(update={"data_metadata_dir": tmp_path})  # no users.json
+    client, _ = make_client(settings)
+    assert client.get("/me").json()["user_id"] == "guest"
+    assert client.get("/me", headers={"X-User-Id": "u06"}).status_code == 401
+    assert client.post("/ingest", headers={"X-User-Id": "u06"}).status_code == 401

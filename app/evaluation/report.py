@@ -76,6 +76,26 @@ def summarize_answers(results: list) -> dict:
     }
 
 
+def summarize_access(results: list) -> dict:
+    """Access control: retrieved documents the question's user may not read (must be 0), and how
+    many `access-denied` questions were refused. The refusal rate is None until they are
+    answered in grounded mode."""
+    retrieved = [r for r in results if r.ok("retrieval")]
+    denied = [r for r in results if r.category == "access-denied"]
+    answered = [r for r in denied if r.ok("generate") and r.refused is not None]
+    return {
+        "n_checked": len(retrieved),
+        "total_leaks": sum(len(r.leaked_docs) for r in retrieved),
+        "leaking_questions": [r.id for r in retrieved if r.leaked_docs],
+        "access_denied": {
+            "n": len(denied),
+            "n_answered": len(answered),
+            "refused": sum(bool(r.refused) for r in answered),
+            "refusal_rate": mean([r.refused for r in answered]),
+        },
+    }
+
+
 def percentile(values: list[float], p: float) -> float:
     """Nearest-rank percentile: the smallest value with at least p% of values at or below it."""
     ordered = sorted(values)
@@ -114,6 +134,7 @@ def build_report(
         },
         "categories": by_category,
         "latency": summarize_latency(results),
+        "access": summarize_access(results),
         "answers": summarize_answers(results),
         "behavior_failures": [
             {"id": r.id, "category": r.category, "reason": r.judge.reason}
@@ -276,6 +297,25 @@ def render_markdown(report: dict) -> str:
             ]
         else:
             lines.append("No refusals.")
+
+    access = report.get("access")
+    if access:
+        denied = access["access_denied"]
+        rate = "n/a" if denied["refusal_rate"] is None else f"{denied['refusal_rate']:.2f}"
+        lines += [
+            "",
+            "## Access control",
+            "",
+            f"Leaked documents (retrieved but unreadable by the question's user, must be 0): "
+            f"{access['total_leaks']} over {access['n_checked']} retrieved questions"
+            + (
+                f" ({', '.join(access['leaking_questions'])})"
+                if access["leaking_questions"]
+                else ""
+            )
+            + f". `access-denied` questions refused: {denied['refused']} of "
+            f"{denied['n_answered']} answered (rate {rate}; {denied['n']} in the set).",
+        ]
 
     lines += ["", "## Latency (seconds per question)", ""]
     if report.get("latency"):

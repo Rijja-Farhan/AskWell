@@ -4,15 +4,30 @@ Embedder, LLM and reranker are created lazily on first use, so building the app 
 key and loads no model. Tests pass fakes to `Deps` and nothing is built.
 """
 
+import logging
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
+from fastapi import Request
+
 from app.config import Settings
+from app.dataset.schemas import UserProfile
+from app.rag.access import GUEST, load_users
 from app.rag.embeddings import Embedder
 from app.rag.llm import LLM, get_embedder, get_llm
-from app.rag.memory import InMemorySessionStore, SessionStore
+from app.rag.memory import InMemorySessionStore, ScopedSessionStore, SessionStore
 from app.rag.rerank import Reranker, get_reranker
+
+log = logging.getLogger("askwell.api")
+
+
+class ApiError(Exception):
+    """An error with its own status and error code, mapped to the standard error body."""
+
+    def __init__(self, status: int, code: str, message: str) -> None:
+        super().__init__(message)
+        self.status, self.code, self.message = status, code, message
 
 
 class IndexGate:
@@ -90,6 +105,7 @@ class Deps:
     reranker: Reranker | None = None
     gate: IndexGate = field(default_factory=IndexGate)
     sessions: SessionStore | None = None
+    users: dict[str, UserProfile] | None = None
     _reranker_ready: bool = field(default=False, repr=False)
     _build_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -116,3 +132,46 @@ class Deps:
                 self.reranker = get_reranker(self.settings)  # None when RERANKER=none
                 self._reranker_ready = True
             return self.reranker
+
+    def get_users(self) -> dict[str, UserProfile]:
+        """Profiles by id, loaded once. A missing or invalid users file fails closed: no
+        users, so every caller is the guest and every named user is unknown."""
+        with self._build_lock:
+            if self.users is None:
+                try:
+                    self.users = load_users(self.settings)
+                except Exception as exc:  # noqa: BLE001
+                    log.error("cannot load users (%s): serving guests only", type(exc).__name__)
+                    self.users = {}
+            return self.users
+
+    def sessions_for(self, user: UserProfile) -> SessionStore:
+        """The session store as seen by one user (sessions are owned by their creator)."""
+        assert self.sessions is not None
+        return ScopedSessionStore(self.sessions, user.user_id)
+
+
+def current_user(request: Request) -> UserProfile:
+    """FastAPI dependency: the profile named by the `X-User-Id` header.
+
+    DEMO IDENTITY SWITCH, NOT AUTHENTICATION: anyone can send any id. It exists so the access
+    rules can be exercised and the UI can switch users; real auth is out of scope. No header
+    means the least-privilege guest; an unknown id is a 401.
+    """
+    deps: Deps = request.app.state.deps
+    user_id = request.headers.get("x-user-id")
+    if not user_id:
+        return GUEST
+    user = deps.get_users().get(user_id)
+    if user is None:
+        if not deps.settings.rbac_enabled:
+            return GUEST
+        raise ApiError(401, "unknown_user", "Unknown user.")
+    return user
+
+
+def is_admin(user: UserProfile) -> bool:
+    """May change what everyone can see (ingest): restricted clearance and all departments."""
+    return user.clearance == "restricted" and {"HR", "IT", "Operations", "Finance"} <= set(
+        user.departments
+    )

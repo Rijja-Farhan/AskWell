@@ -11,7 +11,12 @@ the dense query and BM25 rank only chunks of those documents.
 - version_policy: "active_only" drops superseded documents; "prefer_active" keeps them but
   never above an active chunk of the same family; "all" keeps everything.
 
-This is the single place for retrieval-time metadata constraints (Phase 12 adds access level).
+- user: the requesting user's access (clearance and departments); only documents the user may
+  read are ranked. It is intersected with every other constraint, so `departments` can narrow
+  a user's results but never widen them.
+
+This is the single place for retrieval-time constraints. Denied chunks are removed before
+dense search, BM25, fusion and reranking, so they never reach the LLM prompt.
 """
 
 import re
@@ -20,11 +25,12 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from app.dataset.schemas import Department
+from app.dataset.schemas import Department, UserProfile
+from app.rag.access import accessible_doc_ids
 from app.rag.chunking import Scalar
 
 # Bump when the meaning of a filter or policy changes, so old eval runs no longer resume.
-FILTER_VERSION = 1
+FILTER_VERSION = 2  # 2: access control (user) added
 
 VersionPolicy = Literal["active_only", "prefer_active", "all"]
 VERSION_SUFFIX = re.compile(r"-v\d+$")
@@ -34,6 +40,7 @@ class RetrievalFilter(BaseModel):
     departments: list[Department] | None = None
     as_of: date | None = None
     version_policy: VersionPolicy | None = None  # None means settings.version_policy
+    user: UserProfile | None = None  # None means no access filtering
 
 
 def family(metadata: dict[str, Scalar]) -> str:
@@ -59,9 +66,17 @@ def allowed_doc_ids(
 ) -> set[str] | None:
     """The doc ids the filter keeps, from chunk metadata; None when it keeps everything."""
     filters = filters or RetrievalFilter()
-    if not filters.departments and filters.as_of is None and policy != "active_only":
+    if (
+        filters.user is None
+        and not filters.departments
+        and filters.as_of is None
+        and policy != "active_only"
+    ):
         return None
-    docs = {str(m["doc_id"]): m for m in metadatas}  # one entry per document
+    docs = {str(m["doc_id"]): m for m in metadatas if "doc_id" in m}  # one entry per document
+    if filters.user is not None:  # first, so later steps (as_of) only see readable documents
+        allowed = accessible_doc_ids(filters.user, metadatas)
+        docs = {d: m for d, m in docs.items() if d in allowed}
     if filters.departments:
         docs = {d: m for d, m in docs.items() if m.get("department") in filters.departments}
     if policy == "active_only":

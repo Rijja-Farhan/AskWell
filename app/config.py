@@ -91,6 +91,10 @@ class Settings(BaseSettings):
     memory_max_sessions: int = 1000
     memory_ttl_seconds: int = 3600
 
+    # Role-based access: when true every retrieval is restricted to what the request's user may
+    # read (see app/rag/access.py). false disables filtering (eval comparison, legacy tests).
+    rbac_enabled: bool = True
+
     # API server: bind address and CORS origins (comma list; empty disables CORS)
     api_host: str = "127.0.0.1"
     api_port: int = 8000

@@ -93,14 +93,23 @@ class EvalQuestion(BaseModel):
     attack_in: Literal["question", "document"] | None = None
 
 
-def can_access(user: UserProfile, doc: DocumentMeta) -> bool:
-    """Return True if `user` may read `doc`.
+def level_readable(
+    access_level: str, department: str | None, clearance: str, departments: list[str]
+) -> bool:
+    """The one access rule, over plain values (so index metadata can use it too).
 
-    Readable iff the doc's level is at or below the user's clearance, and either the level is
-    public/internal or the doc's department is one the user is granted.
+    Readable iff the level is at or below the clearance, and either the level is
+    public/internal or the department is one the user is granted. Fails closed: an unknown
+    level counts as restricted and an unknown clearance as below public.
     """
-    if ACCESS_RANK[doc.access_level] > ACCESS_RANK[user.clearance]:
+    level = ACCESS_RANK.get(access_level, ACCESS_RANK["restricted"])
+    if level > ACCESS_RANK.get(clearance, -1):
         return False
-    if doc.access_level in ("public", "internal"):
+    if level <= ACCESS_RANK["internal"]:
         return True
-    return doc.department in user.departments
+    return department is not None and department in departments
+
+
+def can_access(user: UserProfile, doc: DocumentMeta) -> bool:
+    """Return True if `user` may read `doc` (see `level_readable`)."""
+    return level_readable(doc.access_level, doc.department, user.clearance, user.departments)

@@ -22,10 +22,11 @@ from app.dataset.schemas import EvalQuestion
 from app.evaluation import metrics
 from app.evaluation.judge import JudgeError, judge_answer
 from app.evaluation.report import build_report, load_report, write_report
+from app.rag.access import ACCESS_VERSION, GUEST, can_read, load_users
 from app.rag.answer import ANSWER_VERSION, answer_from_chunks
 from app.rag.bm25 import BM25_VERSION
 from app.rag.embeddings import Embedder
-from app.rag.filters import FILTER_VERSION
+from app.rag.filters import FILTER_VERSION, RetrievalFilter
 from app.rag.llm import LLM
 from app.rag.rerank import RERANK_VERSION, Reranker
 from app.rag.retrieve import RetrievedChunk, retrieve
@@ -85,6 +86,9 @@ class QuestionResult(BaseModel):
     expected_behavior: str
     gold_doc_ids: list[str]
     superseded_doc_ids: list[str]
+    user_id: str = ""  # the profile the question was asked as (Phase 12)
+    # Retrieved doc ids this question's user may not read; must always be empty.
+    leaked_docs: list[str] = []
     retrieved: list[ChunkRef] = []
     doc_ranks: dict[str, int] = {}
     metrics: dict[str, float | bool | None] = {}
@@ -215,6 +219,10 @@ def run_config(settings: Settings, eval_set: Path) -> dict:
     config["version_policy"] = settings.version_policy
     if settings.version_policy != "all":
         config["filter_version"] = FILTER_VERSION
+    # Runs made before Phase 12 have neither key, so they never resume as access-aware runs.
+    config["rbac_enabled"] = settings.rbac_enabled
+    if settings.rbac_enabled:
+        config["access_version"] = ACCESS_VERSION
     config["answer_mode"] = settings.answer_mode
     if settings.answer_mode == "grounded":
         config |= {
@@ -267,6 +275,7 @@ def new_result(q: EvalQuestion) -> QuestionResult:
         expected_behavior=q.expected_behavior,
         gold_doc_ids=q.gold_doc_ids,
         superseded_doc_ids=q.superseded_doc_ids,
+        user_id=q.user_id,
     )
 
 
@@ -346,6 +355,12 @@ def run_eval(
         "judge": ThrottledLLM(judge_llm, throttle) if judge_llm else None,
     }
     timed = TimedReranker(reranker) if reranker else None
+    users = load_users(settings)
+
+    def profile(q: EvalQuestion):
+        """The question's user; an unknown id gets the guest (fail closed)."""
+        return users.get(q.user_id, GUEST)
+
     collection = None
 
     def run_one(stage: str, q: EvalQuestion, r: QuestionResult) -> None:
@@ -353,7 +368,11 @@ def run_eval(
         if stage == "retrieval":
             assert embedder is not None, "the retrieval stage needs an embedder"
             before = timed.seconds if timed else 0.0
-            hits = retrieve(q.question, settings.eval_retrieval_k, embedder, settings, timed)
+            access = RetrievalFilter(user=profile(q)) if settings.rbac_enabled else None
+            hits = retrieve(
+                q.question, settings.eval_retrieval_k, embedder, settings, timed, access
+            )
+            r.leaked_docs = sorted({h.doc_id for h in hits if not can_read(profile(q), h.metadata)})
             if timed and settings.reranker != "none":
                 r.latency["rerank"] = round(timed.seconds - before, 3)
             r.retrieved = [

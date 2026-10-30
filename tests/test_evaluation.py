@@ -160,7 +160,9 @@ def test_throttle_spaces_calls():
 
 @pytest.fixture(scope="module")
 def indexed(corpus, tmp_path_factory):
-    settings = make_settings(tmp_path_factory.mktemp("index"), eval_chat_interval=0)
+    settings = make_settings(
+        tmp_path_factory.mktemp("index"), eval_chat_interval=0, rbac_enabled=False
+    )
     build_index(corpus, FakeEmbedder(), settings)
     return settings
 
@@ -412,3 +414,22 @@ def test_old_results_without_refusal_fields_load(settings):
     path.write_text("".join(json.dumps(r) + "\n" for r in rows))
     loaded = load_results(path)
     assert all(r.refused is None and r.citations is None for r in loaded.values())
+
+
+# ---------------------------------------------------------------- access control (Phase 12)
+
+
+def test_runner_passes_user_and_reports_leaks(settings):
+    on = settings.model_copy(update={"rbac_enabled": True})
+    off = settings.model_copy(update={"rbac_enabled": False})
+    kw = dict(stages=["retrieval"], embedder=FakeEmbedder(), llm=None, judge_llm=None)
+    safe = run_eval("rbac-on", settings=on, **kw)
+    assert safe.report["access"]["total_leaks"] == 0
+    assert safe.report["access"]["access_denied"]["n"] == 10
+    assert "## Access control" in (safe.run_dir / "report.md").read_text()
+    leaky = run_eval("rbac-off", settings=off, **kw)
+    assert leaky.report["access"]["total_leaks"] > 0  # without the filter, restricted docs leak
+    assert run_config(on, resolve(on.eval_set_path)) != run_config(off, resolve(off.eval_set_path))
+    # a run made before Phase 12 (no access keys) cannot resume as an access-aware run
+    config = run_config(on, resolve(on.eval_set_path))
+    assert "access_version" in config and "rbac_enabled" in config

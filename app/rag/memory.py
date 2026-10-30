@@ -39,6 +39,28 @@ class SessionStore(Protocol):
     def exists(self, session_id: str) -> bool: ...
 
 
+class ScopedSessionStore:
+    """A view of a store for one user: session ids are stored as `<user_id>:<session_id>`, so
+    two users never share a session and the store's interface is unchanged. Valid session ids
+    never contain ":", so keys of different users cannot collide."""
+
+    def __init__(self, store: SessionStore, user_id: str) -> None:
+        self._store = store
+        self._prefix = f"{user_id}:"
+
+    def get(self, session_id: str) -> list[Turn]:
+        return self._store.get(self._prefix + session_id)
+
+    def append(self, session_id: str, turn: Turn) -> None:
+        self._store.append(self._prefix + session_id, turn)
+
+    def clear(self, session_id: str) -> None:
+        self._store.clear(self._prefix + session_id)
+
+    def exists(self, session_id: str) -> bool:
+        return self._store.exists(self._prefix + session_id)
+
+
 class InMemorySessionStore:
     """Thread-safe LRU + TTL store. `clock` is injectable for tests."""
 

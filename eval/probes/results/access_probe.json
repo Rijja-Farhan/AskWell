@@ -1,0 +1,187 @@
+{
+  "access_version": 1,
+  "retrieval_mode": "bm25",
+  "reranker": "none",
+  "k": 10,
+  "total_leaks": 0,
+  "users": [
+    {
+      "user_id": "u01",
+      "clearance": "confidential",
+      "departments": [
+        "HR"
+      ],
+      "readable_docs": 42,
+      "queries": 86,
+      "chunks_returned": 700,
+      "leaks": 0
+    },
+    {
+      "user_id": "u02",
+      "clearance": "internal",
+      "departments": [],
+      "readable_docs": 40,
+      "queries": 86,
+      "chunks_returned": 696,
+      "leaks": 0
+    },
+    {
+      "user_id": "u03",
+      "clearance": "internal",
+      "departments": [],
+      "readable_docs": 40,
+      "queries": 86,
+      "chunks_returned": 696,
+      "leaks": 0
+    },
+    {
+      "user_id": "u04",
+      "clearance": "confidential",
+      "departments": [
+        "Finance"
+      ],
+      "readable_docs": 43,
+      "queries": 86,
+      "chunks_returned": 710,
+      "leaks": 0
+    },
+    {
+      "user_id": "u05",
+      "clearance": "public",
+      "departments": [],
+      "readable_docs": 8,
+      "queries": 86,
+      "chunks_returned": 316,
+      "leaks": 0
+    },
+    {
+      "user_id": "u06",
+      "clearance": "restricted",
+      "departments": [
+        "HR",
+        "IT",
+        "Operations",
+        "Finance"
+      ],
+      "readable_docs": 52,
+      "queries": 86,
+      "chunks_returned": 721,
+      "leaks": 0
+    },
+    {
+      "user_id": "u07",
+      "clearance": "restricted",
+      "departments": [
+        "IT"
+      ],
+      "readable_docs": 42,
+      "queries": 86,
+      "chunks_returned": 699,
+      "leaks": 0
+    },
+    {
+      "user_id": "u08",
+      "clearance": "restricted",
+      "departments": [
+        "HR"
+      ],
+      "readable_docs": 43,
+      "queries": 86,
+      "chunks_returned": 700,
+      "leaks": 0
+    },
+    {
+      "user_id": "u09",
+      "clearance": "restricted",
+      "departments": [
+        "Finance"
+      ],
+      "readable_docs": 44,
+      "queries": 86,
+      "chunks_returned": 713,
+      "leaks": 0
+    },
+    {
+      "user_id": "u10",
+      "clearance": "confidential",
+      "departments": [
+        "Operations"
+      ],
+      "readable_docs": 42,
+      "queries": 86,
+      "chunks_returned": 707,
+      "leaks": 0
+    },
+    {
+      "user_id": "guest",
+      "clearance": "public",
+      "departments": [],
+      "readable_docs": 8,
+      "queries": 86,
+      "chunks_returned": 316,
+      "leaks": 0
+    }
+  ],
+  "access_denied_questions": [
+    {
+      "id": "q061",
+      "user_id": "u02",
+      "chunks_returned": 3,
+      "leaks": 0
+    },
+    {
+      "id": "q062",
+      "user_id": "u03",
+      "chunks_returned": 10,
+      "leaks": 0
+    },
+    {
+      "id": "q063",
+      "user_id": "u05",
+      "chunks_returned": 8,
+      "leaks": 0
+    },
+    {
+      "id": "q064",
+      "user_id": "u02",
+      "chunks_returned": 10,
+      "leaks": 0
+    },
+    {
+      "id": "q065",
+      "user_id": "u04",
+      "chunks_returned": 10,
+      "leaks": 0
+    },
+    {
+      "id": "q066",
+      "user_id": "u03",
+      "chunks_returned": 10,
+      "leaks": 0
+    },
+    {
+      "id": "q067",
+      "user_id": "u01",
+      "chunks_returned": 10,
+      "leaks": 0
+    },
+    {
+      "id": "q068",
+      "user_id": "u07",
+      "chunks_returned": 10,
+      "leaks": 0
+    },
+    {
+      "id": "q069",
+      "user_id": "u10",
+      "chunks_returned": 5,
+      "leaks": 0
+    },
+    {
+      "id": "q070",
+      "user_id": "u05",
+      "chunks_returned": 1,
+      "leaks": 0
+    }
+  ]
+}

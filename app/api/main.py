@@ -16,10 +16,10 @@ import re
 import time
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Annotated, Any
 
 import openai
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -27,7 +27,7 @@ from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.deps import Deps
+from app.api.deps import ApiError, Deps, current_user, is_admin
 from app.api.schemas import (
     ChatRequest,
     ChatResponse,
@@ -38,6 +38,7 @@ from app.api.schemas import (
     to_turn,
 )
 from app.config import Settings, get_settings
+from app.dataset.schemas import UserProfile
 from app.rag.answer import Answer, answer_from_chunks, stream_answer
 from app.rag.conversation import memory_active, record_turn, standalone_query
 from app.rag.errors import CorpusParseError, IndexNotReadyError, MissingAPIKeyError
@@ -51,6 +52,7 @@ log = logging.getLogger("askwell.api")
 UNAVAILABLE = (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError)
 DEFAULT_RETRY_AFTER = 30
 SESSION_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
+CurrentUser = Annotated[UserProfile, Depends(current_user)]
 
 
 class IngestBusyError(RuntimeError):
@@ -102,11 +104,17 @@ def sse(event: str, data: BaseModel | dict) -> str:
     return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
-def filters_from(req: ChatRequest) -> RetrievalFilter | None:
-    if req.departments is None and req.as_of is None and req.version_policy is None:
+def filters_from(req: ChatRequest, user: UserProfile | None = None) -> RetrievalFilter | None:
+    """The request's filters plus the user's access (None when access is not enforced)."""
+    if (
+        user is None
+        and req.departments is None
+        and req.as_of is None
+        and req.version_policy is None
+    ):
         return None
     return RetrievalFilter(
-        departments=req.departments, as_of=req.as_of, version_policy=req.version_policy
+        departments=req.departments, as_of=req.as_of, version_policy=req.version_policy, user=user
     )
 
 
@@ -133,7 +141,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                 log.warning("startup: %s failed (%s)", build.__name__, type(exc).__name__)
         yield
 
-    app = FastAPI(title="Askwell", version="0.11.0", lifespan=lifespan)
+    app = FastAPI(title="Askwell", version="0.12.0", lifespan=lifespan)
     app.state.deps = deps
 
     origins = [o.strip() for o in settings.api_cors_origins.split(",") if o.strip()]
@@ -155,6 +163,10 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
         return JSONResponse(
             error_body("validation_error", "Invalid request.", details=details), status_code=422
         )
+
+    @app.exception_handler(ApiError)
+    async def _api_error(request: Request, exc: ApiError):
+        return JSONResponse(error_body(exc.code, exc.message), status_code=exc.status)
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(request: Request, exc: StarletteHTTPException):
@@ -221,41 +233,51 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
         """The session id when memory applies; a supplied id is ignored if memory is off."""
         return req.session_id if memory_active(req.session_id, settings) else None
 
+    def access_filter(req: ChatRequest, user: UserProfile) -> RetrievalFilter | None:
+        return filters_from(req, user if settings.rbac_enabled else None)
+
+    @app.get("/me", response_model=UserProfile)
+    def me(user: CurrentUser) -> UserProfile:
+        return user
+
     @app.post("/chat", response_model=ChatResponse)
-    def chat(req: ChatRequest) -> ChatResponse:
+    def chat(req: ChatRequest, user: CurrentUser) -> ChatResponse:
         start = time.perf_counter()
+        sessions = deps.sessions_for(user)
         embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
         session_id = session_for(req)
         with deps.gate.read():
-            query = standalone_query(req.question, session_id, deps.sessions, llm, settings)
+            query = standalone_query(req.question, session_id, sessions, llm, settings)
             chunks = retrieve(
                 query or req.question,
                 req.k or settings.retrieval_top_k,
                 embedder,
                 settings,
                 reranker,
-                filters_from(req),
+                access_filter(req, user),
             )
             # the answer step sees the original question, never the history
             answer = answer_from_chunks(req.question, chunks, llm, settings)
-        record_turn(deps.sessions, session_id, req.question, query, answer)
+        record_turn(sessions, session_id, req.question, query, answer)
+        log.info("chat user=%s chunks=%d refused=%s", user.user_id, len(chunks), answer.refused)
         return to_response(answer, req.include_text, elapsed_ms(start), session_id, query)
 
     @app.post("/chat/stream")
-    def chat_stream(req: ChatRequest):
+    def chat_stream(req: ChatRequest, user: CurrentUser):
         start = time.perf_counter()
+        sessions = deps.sessions_for(user)
         embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
         session_id = session_for(req)
         lease = deps.gate.acquire_read()
         try:  # retrieval errors are still plain HTTP errors: nothing has been sent yet
-            query = standalone_query(req.question, session_id, deps.sessions, llm, settings)
+            query = standalone_query(req.question, session_id, sessions, llm, settings)
             chunks = retrieve(
                 query or req.question,
                 req.k or settings.retrieval_top_k,
                 embedder,
                 settings,
                 reranker,
-                filters_from(req),
+                access_filter(req, user),
             )
         except BaseException:
             lease.release()
@@ -278,7 +300,7 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                                 item, req.include_text, elapsed_ms(start), session_id, query
                             ),
                         )
-                        record_turn(deps.sessions, session_id, req.question, query, item)
+                        record_turn(sessions, session_id, req.question, query, item)
                         yield done
                     else:
                         yield sse("token", {"text": item})
@@ -296,25 +318,31 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
             background=BackgroundTask(lease.release),  # covers a stream that never started
         )
 
-    # Sessions (ids are labels, not identities; per-user ownership comes in Phase 12)
+    # Sessions: owned by the user who created them; another user's id is simply "not found"
     @app.get("/sessions/{session_id}", response_model=SessionResponse)
-    def get_session(session_id: str) -> SessionResponse:
-        if not valid_session_id(session_id) or not deps.sessions.exists(session_id):
+    def get_session(session_id: str, user: CurrentUser) -> SessionResponse:
+        sessions = deps.sessions_for(user)
+        if not valid_session_id(session_id) or not sessions.exists(session_id):
             raise StarletteHTTPException(404, "Session not found.")
         return SessionResponse(
-            session_id=session_id, turns=[to_turn(t) for t in deps.sessions.get(session_id)]
+            session_id=session_id, turns=[to_turn(t) for t in sessions.get(session_id)]
         )
 
     @app.delete("/sessions/{session_id}", status_code=204)
-    def delete_session(session_id: str) -> Response:
-        if not valid_session_id(session_id) or not deps.sessions.exists(session_id):
+    def delete_session(session_id: str, user: CurrentUser) -> Response:
+        sessions = deps.sessions_for(user)
+        if not valid_session_id(session_id) or not sessions.exists(session_id):
             raise StarletteHTTPException(404, "Session not found.")
-        deps.sessions.clear(session_id)
+        sessions.clear(session_id)
         return Response(status_code=204)
 
     # Ingest
     @app.post("/ingest", response_model=SyncStats)
-    def ingest(body: IngestRequest | None = None):
+    def ingest(user: CurrentUser, body: IngestRequest | None = None):
+        # Admin only: an ingest changes what everyone can see.
+        if settings.rbac_enabled and not is_admin(user):
+            log.warning("ingest denied user=%s", user.user_id)
+            raise ApiError(403, "forbidden", "Only an administrator may run an ingest.")
         if not deps.gate.begin_ingest():
             raise IngestBusyError
         try:
