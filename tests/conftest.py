@@ -76,5 +76,6 @@ def make_settings(tmp_path: Path, **overrides) -> Settings:
         "llm_model": FakeLLM.model,
         "reranker": "none",  # the real reranker downloads a model; tests opt in with a fake
         "version_policy": "all",  # unfiltered, as before Phase 8; filter tests opt in
+        "traces_dir": tmp_path / "traces",  # never write traces into the repo
     }
     return Settings(_env_file=None, **{**values, **overrides})

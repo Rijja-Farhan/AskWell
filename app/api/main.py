@@ -10,19 +10,20 @@ All endpoints are plain `def`, so Starlette runs them in its thread pool and blo
 Starlette a sync generator, which it iterates in the thread pool as well.
 """
 
+import hashlib
 import json
 import logging
 import re
 import time
 from collections.abc import Iterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager, nullcontext
 from typing import Annotated, Any
 
 import openai
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -39,6 +40,15 @@ from app.api.schemas import (
 )
 from app.config import Settings, get_settings
 from app.dataset.schemas import UserProfile
+from app.observability import (
+    ActiveTrace,
+    Trace,
+    Tracer,
+    current_trace_id,
+    span,
+)
+from app.observability.trace import SpanError
+from app.observability.view import render_html
 from app.rag.answer import Answer, empty_question_answer, stream_answer
 from app.rag.cache import (
     answer_key,
@@ -51,6 +61,7 @@ from app.rag.conversation import memory_active, record_turn, standalone_query
 from app.rag.errors import CorpusParseError, IndexNotReadyError, MissingAPIKeyError
 from app.rag.filters import RetrievalFilter
 from app.rag.ingest import ingest_corpus
+from app.rag.llm import traced as trace_llm
 from app.rag.sanitize import prepare_question
 from app.rag.store import REPO_ROOT, SyncStats, open_collection
 
@@ -98,12 +109,38 @@ def retry_after(exc: BaseException) -> str:
     return value if value and value.isdigit() else str(DEFAULT_RETRY_AFTER)
 
 
-def error_response(exc: BaseException) -> JSONResponse:
+def error_response(exc: BaseException, extra_headers: dict[str, str] | None = None) -> JSONResponse:
     status, code, message = classify(exc)
     log.warning("request failed: %s -> %s %s", type(exc).__name__, status, code)
     extra = {"errors": exc.errors} if isinstance(exc, CorpusParseError) else {}
-    headers = {"Retry-After": retry_after(exc)} if isinstance(exc, UNAVAILABLE) else None
-    return JSONResponse(error_body(code, message, **extra), status_code=status, headers=headers)
+    headers = dict(extra_headers or {})
+    if isinstance(exc, UNAVAILABLE):
+        headers["Retry-After"] = retry_after(exc)
+    return JSONResponse(
+        error_body(code, message, **extra), status_code=status, headers=headers or None
+    )
+
+
+def trace_ref() -> str:
+    return current_trace_id() or "-"
+
+
+def trace_header(request: Request) -> dict[str, str]:
+    """`X-Trace-Id` for an error response, when the failed request had a trace."""
+    trace_id = getattr(request.state, "trace_id", None)
+    return {"X-Trace-Id": trace_id} if trace_id else {}
+
+
+def trace_error_code(exc: BaseException) -> str:
+    if isinstance(exc, ApiError):
+        return exc.code
+    if isinstance(exc, StarletteHTTPException):
+        return f"http_{exc.status_code}"
+    return classify(exc)[1]
+
+
+def question_hash(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
 
 
 def sse(event: str, data: BaseModel | dict) -> str:
@@ -137,6 +174,35 @@ def replay(answer: Answer) -> Iterator[str | Answer]:
     yield answer
 
 
+def generate_attrs(answer: Answer, cached: bool) -> dict[str, Any]:
+    return {
+        "cache_hit": cached,
+        "refused": answer.refused,
+        "refusal_reason": answer.refusal_reason,
+        "citations": len(answer.citations),
+        "invalid_citations": answer.invalid_citations,
+    }
+
+
+def bind_trace(handle: ActiveTrace | None, stream: Iterator[str]) -> Iterator[str]:
+    """Iterate `stream` with the trace bound to the current thread's context at every step:
+    Starlette resumes a sync generator in whichever pool thread is free, in a context that
+    never saw the endpoint's binding."""
+    if handle is None:
+        yield from stream
+        return
+    try:
+        while True:
+            handle.bind()
+            try:
+                item = next(stream)
+            except StopIteration:
+                return
+            yield item
+    finally:
+        stream.close()
+
+
 def valid_session_id(value: str) -> bool:
     return SESSION_ID.fullmatch(value) is not None
 
@@ -162,6 +228,65 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
 
     app = FastAPI(title="Askwell", version="0.12.0", lifespan=lifespan)
     app.state.deps = deps
+    tracer = Tracer(enabled=settings.trace_enabled, classify=trace_error_code)
+    traces = deps.get_traces()
+
+    def finish_trace(handle: ActiveTrace | None, error: BaseException | SpanError | None = None):
+        """Close a request's trace and store it. Storing never fails the request."""
+        if handle is None:
+            return None
+        trace = handle.finish(error)
+        try:
+            traces.add(trace)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("trace store failed (%s)", type(exc).__name__)
+        return trace
+
+    @contextmanager
+    def request_trace(
+        endpoint: str,
+        user: UserProfile,
+        session_id: str | None,
+        request: Request,
+        response: Response | None = None,
+    ):
+        """Trace one request for the length of the `with` block (None when tracing is off)."""
+        handle = tracer.start(endpoint, user.user_id, session_id)
+        if handle is None:
+            yield None
+            return
+        request.state.trace_id = handle.trace_id
+        if response is not None:
+            response.headers["X-Trace-Id"] = handle.trace_id
+        failure: BaseException | None = None
+        try:
+            with handle.activate():
+                yield handle
+        except BaseException as exc:
+            failure = exc
+            raise
+        finally:
+            finish_trace(handle, failure)
+
+    def summarize_answer(handle: ActiveTrace | None, answer: Answer, cached: bool) -> None:
+        if handle is None:
+            return
+        handle.summary(
+            cached=cached,
+            refused=answer.refused,
+            refusal_reason=answer.refusal_reason,
+            blocked=answer.refusal_reason == "blocked",
+        )
+        if settings.trace_store_text:
+            handle.put_text("answer_text", answer.answer)
+
+    def sanitized(handle: ActiveTrace | None, question: str):
+        with span("sanitize") as s:
+            clean = prepare_question(question, settings)  # every later step sees only this
+            s.set(removed=clean.removed, empty=not clean.text)
+        if handle is not None:
+            handle.summary(question_chars=len(clean.text), question_hash=question_hash(clean.text))
+        return clean
 
     origins = [o.strip() for o in settings.api_cors_origins.split(",") if o.strip()]
     if origins:
@@ -185,12 +310,18 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
 
     @app.exception_handler(ApiError)
     async def _api_error(request: Request, exc: ApiError):
-        return JSONResponse(error_body(exc.code, exc.message), status_code=exc.status)
+        return JSONResponse(
+            error_body(exc.code, exc.message),
+            status_code=exc.status,
+            headers=trace_header(request) or None,
+        )
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(request: Request, exc: StarletteHTTPException):
         return JSONResponse(
-            error_body(f"http_{exc.status_code}", str(exc.detail)), status_code=exc.status_code
+            error_body(f"http_{exc.status_code}", str(exc.detail)),
+            status_code=exc.status_code,
+            headers=trace_header(request) or None,
         )
 
     for exc_type in (
@@ -201,17 +332,23 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
         IngestBusyError,
         CorpusParseError,
     ):
-        app.add_exception_handler(exc_type, lambda request, exc: error_response(exc))
+        app.add_exception_handler(
+            exc_type, lambda request, exc: error_response(exc, trace_header(request))
+        )
 
     @app.exception_handler(Exception)
     async def _unexpected(request: Request, exc: Exception):
         log.error("unhandled %s", type(exc).__name__)
-        return error_response(exc)
+        return error_response(exc, trace_header(request))
 
     # Health
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok", "cache": deps.get_caches().stats()}
+        return {
+            "status": "ok",
+            "cache": deps.get_caches().stats(),
+            "traces": traces.stats(),
+        }
 
     @app.get("/health/ready", response_model=ReadyResponse)
     def ready():
@@ -260,89 +397,146 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
         return user
 
     @app.post("/chat", response_model=ChatResponse)
-    def chat(req: ChatRequest, user: CurrentUser) -> ChatResponse:
+    def chat(req: ChatRequest, user: CurrentUser, request: Request, response: Response):
         start = time.perf_counter()
         sessions = deps.sessions_for(user)
         session_id = session_for(req)
-        clean = prepare_question(req.question, settings)  # every later step sees only this
-        if settings.injection_defense and not clean.text:  # nothing but an attack
-            log.info("chat user=%s pure-attack removed=%d", user.user_id, clean.removed)
-            answer = empty_question_answer(clean.text, settings)
-            return to_response(answer, req.include_text, elapsed_ms(start), session_id, None)
-        embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
-        caches = deps.get_caches()
-        with deps.gate.read():
-            query = standalone_query(clean.text, session_id, sessions, llm, settings)
-            retrieval = cached_retrieve(
-                query or clean.text,
-                req.k or settings.retrieval_top_k,
-                embedder,
-                settings,
-                caches,
-                reranker,
-                access_filter(req, user),
-                user,
+        with request_trace("/chat", user, session_id, request, response) as handle:
+            trace_id = handle.trace_id if handle else None
+            clean = sanitized(handle, req.question)
+            if settings.injection_defense and not clean.text:  # nothing but an attack
+                log.info(
+                    "chat user=%s pure-attack removed=%d trace=%s",
+                    user.user_id,
+                    clean.removed,
+                    trace_ref(),
+                )
+                answer = empty_question_answer(clean.text, settings)
+                summarize_answer(handle, answer, False)
+                if handle:
+                    handle.summary(blocked=True)
+                return to_response(
+                    answer, req.include_text, elapsed_ms(start), session_id, None, trace_id=trace_id
+                )
+            embedder, reranker = deps.get_embedder(), deps.get_reranker()
+            llm = trace_llm(deps.get_llm())
+            caches = deps.get_caches()
+            with deps.gate.read():
+                query = standalone_query(clean.text, session_id, sessions, llm, settings)
+                retrieval = cached_retrieve(
+                    query or clean.text,
+                    req.k or settings.retrieval_top_k,
+                    embedder,
+                    settings,
+                    caches,
+                    reranker,
+                    access_filter(req, user),
+                    user,
+                )
+                chunks = retrieval.chunks
+                # the answer step sees the original question, never the history
+                with span("generate", answer_mode=settings.answer_mode, llm_calls=0) as gen:
+                    answer, cached = cached_answer(clean.text, retrieval, llm, settings, caches)
+                    gen.set(**generate_attrs(answer, cached))
+            summarize_answer(handle, answer, cached)
+            record_turn(sessions, session_id, clean.text, query, answer)
+            log.info(
+                "chat user=%s chunks=%d refused=%s removed=%d trace=%s",
+                user.user_id,
+                len(chunks),
+                answer.refused,
+                clean.removed,
+                trace_ref(),
             )
-            chunks = retrieval.chunks
-            # the answer step sees the original question, never the history
-            answer, cached = cached_answer(clean.text, retrieval, llm, settings, caches)
-        record_turn(sessions, session_id, clean.text, query, answer)
-        log.info(
-            "chat user=%s chunks=%d refused=%s removed=%d",
-            user.user_id,
-            len(chunks),
-            answer.refused,
-            clean.removed,
-        )
-        return to_response(answer, req.include_text, elapsed_ms(start), session_id, query, cached)
+            return to_response(
+                answer, req.include_text, elapsed_ms(start), session_id, query, cached, trace_id
+            )
 
     @app.post("/chat/stream")
-    def chat_stream(req: ChatRequest, user: CurrentUser):
+    def chat_stream(req: ChatRequest, user: CurrentUser, request: Request):
         start = time.perf_counter()
         sessions = deps.sessions_for(user)
         session_id = session_for(req)
-        clean = prepare_question(req.question, settings)  # same input as /chat
-        if settings.injection_defense and not clean.text:  # nothing but an attack
-            log.info("chat user=%s pure-attack removed=%d", user.user_id, clean.removed)
-            refused = empty_question_answer(clean.text, settings)
-            return StreamingResponse(
-                iter(
-                    [
-                        sse("sources", {"sources": [], "standalone_query": None}),
-                        sse(
-                            "done",
-                            to_response(
-                                refused, req.include_text, elapsed_ms(start), session_id, None
-                            ),
+        # The trace starts here, before the response object exists, and is finished by the
+        # generator's `finally` (or here, when the request fails before streaming).
+        handle = tracer.start("/chat/stream", user.user_id, session_id)
+        trace_id = handle.trace_id if handle else None
+        trace_headers = {"X-Trace-Id": trace_id} if trace_id else {}
+        if trace_id:
+            request.state.trace_id = trace_id
+        lease = None
+        try:
+            with handle.activate() if handle else nullcontext():
+                clean = sanitized(handle, req.question)  # same input as /chat
+                if settings.injection_defense and not clean.text:  # nothing but an attack
+                    log.info(
+                        "chat user=%s pure-attack removed=%d trace=%s",
+                        user.user_id,
+                        clean.removed,
+                        trace_ref(),
+                    )
+                    refused = empty_question_answer(clean.text, settings)
+                    summarize_answer(handle, refused, False)
+                    if handle:
+                        handle.summary(blocked=True)
+                    finish_trace(handle)
+                    return StreamingResponse(
+                        iter(
+                            [
+                                sse("sources", {"sources": [], "standalone_query": None}),
+                                sse(
+                                    "done",
+                                    to_response(
+                                        refused,
+                                        req.include_text,
+                                        elapsed_ms(start),
+                                        session_id,
+                                        None,
+                                        trace_id=trace_id,
+                                    ),
+                                ),
+                            ]
                         ),
-                    ]
-                ),
-                media_type="text/event-stream",
-                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-            )
-        embedder, llm, reranker = deps.get_embedder(), deps.get_llm(), deps.get_reranker()
-        caches = deps.get_caches()
-        lease = deps.gate.acquire_read()
-        try:  # retrieval errors are still plain HTTP errors: nothing has been sent yet
-            query = standalone_query(clean.text, session_id, sessions, llm, settings)
-            retrieval = cached_retrieve(
-                query or clean.text,
-                req.k or settings.retrieval_top_k,
-                embedder,
-                settings,
-                caches,
-                reranker,
-                access_filter(req, user),
-                user,
-            )
-            chunks = retrieval.chunks
-            key = answer_key(retrieval.key, clean.text, chunks, settings) if caches.enabled else ""
-            hit = lookup_answer(caches, key)
-        except BaseException:
-            lease.release()
+                        media_type="text/event-stream",
+                        headers={
+                            "Cache-Control": "no-cache",
+                            "X-Accel-Buffering": "no",
+                            **trace_headers,
+                        },
+                    )
+                embedder, reranker = deps.get_embedder(), deps.get_reranker()
+                llm = trace_llm(deps.get_llm())
+                caches = deps.get_caches()
+                lease = deps.gate.acquire_read()
+                # retrieval errors are still plain HTTP errors: nothing has been sent yet
+                query = standalone_query(clean.text, session_id, sessions, llm, settings)
+                retrieval = cached_retrieve(
+                    query or clean.text,
+                    req.k or settings.retrieval_top_k,
+                    embedder,
+                    settings,
+                    caches,
+                    reranker,
+                    access_filter(req, user),
+                    user,
+                )
+                chunks = retrieval.chunks
+                key = (
+                    answer_key(retrieval.key, clean.text, chunks, settings)
+                    if caches.enabled
+                    else ""
+                )
+                hit = lookup_answer(caches, key)
+        except BaseException as exc:
+            if lease is not None:
+                lease.release()
+            finish_trace(handle, exc)
             raise
 
         def events() -> Iterator[str]:
+            failure: BaseException | SpanError | None = None
+            completed = False
+            first_token = True
             try:
                 yield sse(
                     "sources",
@@ -351,41 +545,55 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
                         "standalone_query": query,
                     },
                 )
-                items = (
-                    replay(hit)
-                    if hit is not None
-                    else stream_answer(clean.text, chunks, llm, settings)
-                )
-                for item in items:
-                    if isinstance(item, Answer):
-                        if hit is None:
-                            store_answer(caches, key, item)
-                        done = sse(
-                            "done",
-                            to_response(
-                                item,
-                                req.include_text,
-                                elapsed_ms(start),
-                                session_id,
-                                query,
-                                hit is not None,
-                            ),
-                        )
-                        record_turn(sessions, session_id, clean.text, query, item)
-                        yield done
-                    else:
-                        yield sse("token", {"text": item})
+                with span("generate", answer_mode=settings.answer_mode, llm_calls=0) as gen:
+                    items = (
+                        replay(hit)
+                        if hit is not None
+                        else stream_answer(clean.text, chunks, llm, settings)
+                    )
+                    for item in items:
+                        if isinstance(item, Answer):
+                            if hit is None:
+                                store_answer(caches, key, item)
+                            gen.set(**generate_attrs(item, hit is not None))
+                            summarize_answer(handle, item, hit is not None)
+                            done = sse(
+                                "done",
+                                to_response(
+                                    item,
+                                    req.include_text,
+                                    elapsed_ms(start),
+                                    session_id,
+                                    query,
+                                    hit is not None,
+                                    trace_id,
+                                ),
+                            )
+                            record_turn(sessions, session_id, clean.text, query, item)
+                            completed = True
+                            yield done
+                        else:
+                            if first_token:
+                                first_token = False
+                                gen.set(ttft_ms=round(gen.elapsed_ms(), 3))
+                                if handle:
+                                    handle.summary(ttft_ms=round(handle.now_ms(), 3))
+                            yield sse("token", {"text": item})
             except Exception as exc:  # noqa: BLE001 - the response has started: emit an event
+                failure = exc
                 _, code, message = classify(exc)
-                log.warning("stream failed: %s -> %s", type(exc).__name__, code)
+                log.warning("stream failed: %s -> %s trace=%s", type(exc).__name__, code, trace_id)
                 yield sse("error", {"code": code, "message": message})
             finally:
                 lease.release()
+                if not completed and failure is None:  # closed before the done event
+                    failure = SpanError(type="ClientDisconnect", code="client_closed")
+                finish_trace(handle, failure)
 
         return StreamingResponse(
-            events(),
+            bind_trace(handle, events()),
             media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", **trace_headers},
             background=BackgroundTask(lease.release),  # covers a stream that never started
         )
 
@@ -409,21 +617,68 @@ def create_app(settings: Settings | None = None, deps: Deps | None = None) -> Fa
 
     # Ingest
     @app.post("/ingest", response_model=SyncStats)
-    def ingest(user: CurrentUser, body: IngestRequest | None = None):
-        # Admin only: an ingest changes what everyone can see.
+    def ingest(
+        user: CurrentUser,
+        request: Request,
+        response: Response,
+        body: IngestRequest | None = None,
+    ):
+        with request_trace("/ingest", user, None, request, response):
+            # Admin only: an ingest changes what everyone can see.
+            if settings.rbac_enabled and not is_admin(user):
+                log.warning("ingest denied user=%s", user.user_id)
+                raise ApiError(403, "forbidden", "Only an administrator may run an ingest.")
+            if not deps.gate.begin_ingest():
+                raise IngestBusyError
+            try:
+                full = body.full if body else False
+                with span("ingest", full=full) as s:
+                    stats = ingest_corpus(REPO_ROOT, deps.get_embedder, settings, full=full)
+                    s.set(
+                        added=len(stats.added),
+                        updated=len(stats.updated),
+                        removed=len(stats.removed),
+                        unchanged=len(stats.unchanged),
+                        chunks_embedded=stats.chunks_embedded,
+                        full_rebuild=stats.full_rebuild,
+                    )
+                deps.get_caches().clear()  # belt and braces: the index fingerprint already changed
+                return stats
+            finally:
+                deps.gate.end_ingest()
+
+    # Traces: they describe other users' requests, so administrators only
+    def require_trace_access(user: UserProfile) -> None:
         if settings.rbac_enabled and not is_admin(user):
-            log.warning("ingest denied user=%s", user.user_id)
-            raise ApiError(403, "forbidden", "Only an administrator may run an ingest.")
-        if not deps.gate.begin_ingest():
-            raise IngestBusyError
-        try:
-            stats = ingest_corpus(
-                REPO_ROOT, deps.get_embedder, settings, full=body.full if body else False
-            )
-            deps.get_caches().clear()  # belt and braces: the index fingerprint already changed
-            return stats
-        finally:
-            deps.gate.end_ingest()
+            log.warning("trace access denied user=%s", user.user_id)
+            raise ApiError(403, "forbidden", "Only an administrator may read traces.")
+
+    def trace_or_404(trace_id: str) -> Trace:
+        trace = traces.get(trace_id)
+        if trace is None:
+            raise StarletteHTTPException(404, "Trace not found.")
+        return trace
+
+    @app.get("/traces")
+    def list_traces(
+        user: CurrentUser,
+        limit: Annotated[int, Query(ge=1, le=200)] = 50,
+        status: str | None = None,
+        user_id: str | None = None,
+    ) -> list[dict]:
+        require_trace_access(user)
+        filters = {"status": status, "user_id": user_id}
+        return [t.model_dump(mode="json") for t in traces.list(limit, filters)]
+
+    @app.get("/traces/{trace_id}")
+    def get_trace(trace_id: str, user: CurrentUser) -> dict:
+        require_trace_access(user)
+        return trace_or_404(trace_id).model_dump(mode="json")
+
+    @app.get("/traces/{trace_id}/view", response_class=HTMLResponse)
+    def view_trace(trace_id: str, user: CurrentUser) -> HTMLResponse:
+        require_trace_access(user)
+        return HTMLResponse(render_html(trace_or_404(trace_id)))
 
     return app
 

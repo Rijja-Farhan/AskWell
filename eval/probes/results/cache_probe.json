@@ -5,22 +5,22 @@
   "questions": 10,
   "median_ms": {
     "cold": {
-      "total": 185.017,
-      "retrieval": 129.91,
-      "answer": 52.353,
-      "embedding": 50.209
+      "total": 184.726,
+      "retrieval": 129.41,
+      "answer": 52.324,
+      "embedding": 50.313
     },
     "warm": {
-      "total": 2.216,
-      "retrieval": 0.212,
-      "answer": 0.18,
+      "total": 2.749,
+      "retrieval": 0.252,
+      "answer": 0.183,
       "embedding": 0.0
     }
   },
   "speedup": {
-    "total": 83.5,
-    "retrieval": 612.8,
-    "answer": 290.9,
+    "total": 67.2,
+    "retrieval": 513.5,
+    "answer": 285.9,
     "embedding": null
   },
   "calls": {
@@ -50,7 +50,7 @@
       "size": 10
     }
   },
-  "index_fingerprint_median_ms": 15.128,
+  "index_fingerprint_median_ms": 13.898,
   "checks": {
     "warm_answers_identical": true,
     "cold_not_cached_warm_cached": true,

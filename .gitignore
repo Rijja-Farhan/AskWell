@@ -14,6 +14,7 @@ chroma_db/
 qdrant_storage/
 *.index
 .cache/
+traces/
 
 # Generated data (keep raw seed data tracked, ignore processed output)
 data/processed/*

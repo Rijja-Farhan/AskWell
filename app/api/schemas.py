@@ -63,6 +63,7 @@ class ChatResponse(BaseModel):
     session_id: str | None = None
     standalone_query: str | None = None  # the query retrieval used, when memory applied
     cached: bool = False  # the answer came from the answer cache (no LLM call)
+    trace_id: str | None = None  # the request's trace (null when tracing is off)
 
 
 class TurnOut(BaseModel):
@@ -137,6 +138,7 @@ def to_response(
     session_id: str | None = None,
     standalone_query: str | None = None,
     cached: bool = False,
+    trace_id: str | None = None,
 ) -> ChatResponse:
     return ChatResponse(
         answer=answer.answer,
@@ -150,4 +152,5 @@ def to_response(
         session_id=session_id,
         standalone_query=standalone_query,
         cached=cached,
+        trace_id=trace_id,
     )

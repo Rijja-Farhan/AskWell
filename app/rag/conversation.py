@@ -8,6 +8,7 @@ context, never the history. Log ids and counts only, never question or history t
 import logging
 
 from app.config import Settings
+from app.observability import span
 from app.rag.answer import Answer
 from app.rag.llm import LLM
 from app.rag.memory import SessionStore, Turn
@@ -27,7 +28,9 @@ def standalone_query(
     if not memory_active(session_id, settings):
         return None
     history = store.get(session_id)  # type: ignore[arg-type]
-    result = rewrite_query(question, history, llm, settings)
+    with span("rewrite", used=bool(history), history_turns=len(history)) as traced:
+        result = rewrite_query(question, history, llm, settings)
+        traced.set(rewritten=result.rewritten)
     log.info("session turns=%d rewritten=%s", len(history), result.rewritten)
     return result.query
 

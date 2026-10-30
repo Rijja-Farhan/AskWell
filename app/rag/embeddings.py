@@ -7,6 +7,8 @@ from typing import Protocol
 
 from openai import OpenAI, RateLimitError
 
+from app.observability import record_embedding_usage
+
 RETRY_HINT = re.compile(r"retry in ([\d.]+)s", re.I)
 DEFAULT_WAIT = 30.0  # seconds, when a 429 does not say how long to wait
 MAX_WAIT = 90.0
@@ -63,6 +65,11 @@ class OpenAICompatEmbedder:
                 if attempt == self.rate_limit_waits:
                     raise
                 self.sleep(rate_limit_wait(exc))
+        try:
+            tokens = getattr(getattr(response, "usage", None), "total_tokens", None)
+            record_embedding_usage(len(batch), tokens if isinstance(tokens, int) else None)
+        except Exception:  # noqa: BLE001 - usage must never fail a request
+            pass
         if len(response.data) != len(batch):
             raise RuntimeError(f"got {len(response.data)} embeddings for {len(batch)} texts")
         # `index` gives each item's position. Gemini omits index 0 (returns None), so a missing

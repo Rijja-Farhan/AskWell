@@ -111,6 +111,15 @@ class Settings(BaseSettings):
     cache_answer_entries: int = 256
     cache_ttl_seconds: int = 3600
 
+    # Tracing (Phase 15): one trace per chat/ingest request with per-stage spans. Traces hold ids,
+    # counts, scores and timings only; answer text is stored just when trace_store_text=true.
+    # trace_enabled=false restores the Phase 14 behaviour (no trace, no X-Trace-Id header).
+    trace_enabled: bool = True
+    trace_max_entries: int = 500
+    trace_to_file: bool = True
+    traces_dir: Path = Path("traces")
+    trace_store_text: bool = False
+
     # API server: bind address and CORS origins (comma list; empty disables CORS)
     api_host: str = "127.0.0.1"
     api_port: int = 8000

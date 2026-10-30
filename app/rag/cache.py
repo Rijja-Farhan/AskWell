@@ -36,6 +36,7 @@ from pydantic import BaseModel
 
 from app.config import Settings
 from app.dataset.schemas import UserProfile
+from app.observability import annotate, span
 from app.rag.access import ACCESS_VERSION
 from app.rag.answer import ANSWER_VERSION, Answer, answer_from_chunks
 from app.rag.bm25 import BM25_VERSION, index_key
@@ -211,6 +212,7 @@ class CachedEmbedder:
             for key, vector in zip(todo, vectors, strict=True):
                 found[key] = tuple(vector)
                 self.cache.set(key, found[key])
+        annotate("embed_query", cache_hit=not todo)
         return [list(found[k]) for k in keys]
 
 
@@ -341,6 +343,38 @@ def cached_retrieve(
     """`retrieve()` behind the embedding and retrieval caches. `question` is the effective
     retrieval query (rewritten, or the sanitized original). Pass the requesting `user` even
     when it is also inside `filters`; it is part of the key either way."""
+    with span("retrieve", mode=settings.retrieval_mode, k=k, cache_hit=False) as traced:
+        result = _cached_retrieve(question, k, embedder, settings, caches, reranker, filters, user)
+        traced.set(cache_hit=result.cached, chunks=chunk_attrs(result.chunks))
+        traced.setdefault(candidates=len(result.chunks))
+        return result
+
+
+def chunk_attrs(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
+    """What a trace records about retrieved chunks: ids, score, version, status; no text."""
+    return [
+        {
+            "rank": c.rank,
+            "chunk_id": c.chunk_id,
+            "doc_id": c.doc_id,
+            "score": c.score,
+            "version": c.metadata.get("version"),
+            "status": c.metadata.get("status"),
+        }
+        for c in chunks
+    ]
+
+
+def _cached_retrieve(
+    question: str,
+    k: int,
+    embedder: Embedder,
+    settings: Settings,
+    caches: CacheBundle,
+    reranker: Reranker | None,
+    filters: RetrievalFilter | None,
+    user: UserProfile | None,
+) -> CachedRetrieval:
     if not caches.enabled:
         return CachedRetrieval(retrieve(question, k, embedder, settings, reranker, filters), "")
     key = retrieval_key(question, k, settings, filters, user, index_fingerprint(settings))

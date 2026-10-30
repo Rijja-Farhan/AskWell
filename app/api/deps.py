@@ -13,6 +13,7 @@ from fastapi import Request
 
 from app.config import Settings
 from app.dataset.schemas import UserProfile
+from app.observability import TraceStore, TraceStores
 from app.rag.access import GUEST, load_users
 from app.rag.cache import CacheBundle
 from app.rag.embeddings import Embedder
@@ -108,6 +109,7 @@ class Deps:
     sessions: SessionStore | None = None
     users: dict[str, UserProfile] | None = None
     caches: CacheBundle | None = None
+    traces: TraceStore | None = None
     _reranker_ready: bool = field(default=False, repr=False)
     _build_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -142,6 +144,14 @@ class Deps:
             if self.caches is None:
                 self.caches = CacheBundle.from_settings(self.settings)
             return self.caches
+
+    def get_traces(self) -> TraceStore:
+        """The trace store (ring buffer plus optional JSONL sink), built once from the settings
+        (tests may pass their own)."""
+        with self._build_lock:
+            if self.traces is None:
+                self.traces = TraceStores.from_settings(self.settings)
+            return self.traces
 
     def get_users(self) -> dict[str, UserProfile]:
         """Profiles by id, loaded once. A missing or invalid users file fails closed: no

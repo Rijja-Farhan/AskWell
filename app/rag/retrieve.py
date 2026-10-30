@@ -13,6 +13,7 @@ cross-encoder (see `app/rag/rerank.py`) and the best k by that score are returne
 from pydantic import BaseModel
 
 from app.config import Settings
+from app.observability import annotate, span
 from app.rag.bm25 import get_index
 from app.rag.chunking import Scalar
 from app.rag.embeddings import Embedder
@@ -41,47 +42,56 @@ class RetrievedChunk(BaseModel):
 def _dense(
     collection, question: str, k: int, embedder: Embedder, doc_ids: set[str] | None = None
 ) -> list[RetrievedChunk]:
-    [query_vector] = embedder.embed([question])
-    result = collection.query(
-        query_embeddings=[query_vector],
-        n_results=k,
-        where={"doc_id": {"$in": sorted(doc_ids)}} if doc_ids is not None else None,
-        include=["documents", "metadatas", "distances"],
-    )
-    hits = zip(
-        result["ids"][0],
-        result["documents"][0],
-        result["metadatas"][0],
-        result["distances"][0],
-        strict=True,
-    )
-    return [
-        RetrievedChunk(
-            chunk_id=chunk_id,
-            doc_id=str(metadata["doc_id"]),
-            rank=rank,
-            score=1.0 - distance,
-            text=text,
-            metadata=dict(metadata),
+    with span("dense", k=k) as traced:
+        with span(
+            "embed_query", model=getattr(embedder, "model", None), texts=1, cache_hit=False
+        ):  # a CachedEmbedder corrects cache_hit
+            [query_vector] = embedder.embed([question])
+        result = collection.query(
+            query_embeddings=[query_vector],
+            n_results=k,
+            where={"doc_id": {"$in": sorted(doc_ids)}} if doc_ids is not None else None,
+            include=["documents", "metadatas", "distances"],
         )
-        for rank, (chunk_id, text, metadata, distance) in enumerate(hits, start=1)
-    ]
+        hits = zip(
+            result["ids"][0],
+            result["documents"][0],
+            result["metadatas"][0],
+            result["distances"][0],
+            strict=True,
+        )
+        chunks = [
+            RetrievedChunk(
+                chunk_id=chunk_id,
+                doc_id=str(metadata["doc_id"]),
+                rank=rank,
+                score=1.0 - distance,
+                text=text,
+                metadata=dict(metadata),
+            )
+            for rank, (chunk_id, text, metadata, distance) in enumerate(hits, start=1)
+        ]
+        traced.set(candidates=len(chunks))
+        return chunks
 
 
 def _bm25(
     collection, question: str, k: int, doc_ids: set[str] | None = None
 ) -> list[RetrievedChunk]:
-    return [
-        RetrievedChunk(
-            chunk_id=hit.chunk_id,
-            doc_id=str(hit.metadata["doc_id"]),
-            rank=rank,
-            score=hit.score,
-            text=hit.text,
-            metadata=hit.metadata,
-        )
-        for rank, hit in enumerate(get_index(collection).search(question, k, doc_ids), start=1)
-    ]
+    with span("bm25", k=k) as traced:
+        chunks = [
+            RetrievedChunk(
+                chunk_id=hit.chunk_id,
+                doc_id=str(hit.metadata["doc_id"]),
+                rank=rank,
+                score=hit.score,
+                text=hit.text,
+                metadata=hit.metadata,
+            )
+            for rank, hit in enumerate(get_index(collection).search(question, k, doc_ids), start=1)
+        ]
+        traced.set(candidates=len(chunks))
+        return chunks
 
 
 def fuse(
@@ -144,10 +154,16 @@ def retrieve(
         return []
     if settings.reranker == "none":
         hits = _first_stage(collection, question, k, k, embedder, settings, doc_ids)
+        annotate("retrieve", candidates=len(hits))
     else:
         pool = max(k, settings.rerank_candidates)
         candidates = _first_stage(collection, question, k, pool, embedder, settings, doc_ids)
-        hits = rerank(question, candidates, reranker, len(candidates))
+        annotate("retrieve", candidates=len(candidates))
+        with span(
+            "rerank", model=getattr(reranker, "model", None), candidates=len(candidates)
+        ) as traced:
+            hits = rerank(question, candidates, reranker, len(candidates))
+            traced.set(k=len(hits))
     if policy == "prefer_active":
         hits = prefer_active(hits)
     return [h.model_copy(update={"rank": rank}) for rank, h in enumerate(hits[:k], start=1)]
@@ -170,10 +186,9 @@ def _first_stage(
     if mode == "bm25":
         return _bm25(collection, question, pool, doc_ids)
     n = max(k, settings.hybrid_candidates)
-    return fuse(
-        _dense(collection, question, n, embedder, doc_ids),
-        _bm25(collection, question, n, doc_ids),
-        pool,
-        settings.rrf_k,
-        settings.bm25_weight,
-    )
+    dense = _dense(collection, question, n, embedder, doc_ids)
+    lexical = _bm25(collection, question, n, doc_ids)
+    with span("fuse", k=pool, rrf_k=settings.rrf_k, bm25_weight=settings.bm25_weight) as traced:
+        fused = fuse(dense, lexical, pool, settings.rrf_k, settings.bm25_weight)
+        traced.set(candidates=len(fused))
+    return fused

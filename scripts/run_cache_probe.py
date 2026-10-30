@@ -103,7 +103,8 @@ class Timer:
 
 def comparable(body: dict) -> str:
     return json.dumps(
-        {k: v for k, v in body.items() if k not in ("latency_ms", "cached")}, sort_keys=True
+        {k: v for k, v in body.items() if k not in ("latency_ms", "cached", "trace_id")},
+        sort_keys=True,
     )
 
 

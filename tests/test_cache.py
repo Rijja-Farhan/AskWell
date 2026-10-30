@@ -433,7 +433,7 @@ def make_client(settings, reply="Twenty days [1].", llm=None, caches=None):
 
 
 def strip(body: dict) -> dict:
-    return {k: v for k, v in body.items() if k not in ("latency_ms", "cached")}
+    return {k: v for k, v in body.items() if k not in ("latency_ms", "cached", "trace_id")}
 
 
 def parse_sse(text: str) -> list[tuple[str, dict]]:
