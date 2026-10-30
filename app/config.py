@@ -83,6 +83,11 @@ class Settings(BaseSettings):
     answer_mode: Literal["baseline", "grounded"] = "grounded"
     refusal_min_score: float | None = -4.0
 
+    # API server: bind address and CORS origins (comma list; empty disables CORS)
+    api_host: str = "127.0.0.1"
+    api_port: int = 8000
+    api_cors_origins: str = ""
+
     # Evaluation: report folder, chunks retrieved per eval question, judge model (empty means
     # llm_model) and the minimum seconds between chat calls (free-tier rate limits)
     eval_reports_dir: Path = Path("eval/reports")

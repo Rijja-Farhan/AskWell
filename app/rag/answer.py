@@ -9,6 +9,7 @@ and UI phases: keep them stable.
 """
 
 import re
+from collections.abc import Iterator
 from typing import Literal
 
 from pydantic import BaseModel
@@ -148,21 +149,18 @@ def refusal(question: str, chunks: list[RetrievedChunk], llm: LLM, reason: str) 
     )
 
 
-def answer_from_chunks(
-    question: str, chunks: list[RetrievedChunk], llm: LLM, settings: Settings
-) -> Answer:
-    """Answer from chunks that were already retrieved (the eval runner reuses its retrieval)."""
-    if settings.answer_mode == "baseline":
-        text = llm.complete(SYSTEM_PROMPT, build_user_message(question, chunks))
-        return Answer(question=question, answer=text, chunks=chunks, model=llm.model)
-
+def refusal_before_llm(chunks: list[RetrievedChunk], settings: Settings) -> str | None:
+    """The refusal reason when the chunks alone rule out an answer (no LLM call), else None."""
     if not chunks:
-        return refusal(question, chunks, llm, "no_context")
+        return "no_context"
     gate = settings.refusal_min_score
     if settings.reranker == "cross-encoder" and gate is not None and chunks[0].score < gate:
-        return refusal(question, chunks, llm, "low_score")
+        return "low_score"
+    return None
 
-    text = llm.complete(GROUNDED_SYSTEM_PROMPT, build_grounded_message(question, chunks))
+
+def finish_grounded(question: str, chunks: list[RetrievedChunk], llm: LLM, text: str) -> Answer:
+    """Turn the model's full grounded reply into an Answer (model refusal, validated citations)."""
     if is_refusal(text):
         return refusal(question, chunks, llm, "model")
     cleaned, citations, invalid = parse_citations(text, chunks)
@@ -174,3 +172,62 @@ def answer_from_chunks(
         citations=citations,
         invalid_citations=invalid,
     )
+
+
+def answer_from_chunks(
+    question: str, chunks: list[RetrievedChunk], llm: LLM, settings: Settings
+) -> Answer:
+    """Answer from chunks that were already retrieved (the eval runner reuses its retrieval)."""
+    if settings.answer_mode == "baseline":
+        text = llm.complete(SYSTEM_PROMPT, build_user_message(question, chunks))
+        return Answer(question=question, answer=text, chunks=chunks, model=llm.model)
+
+    reason = refusal_before_llm(chunks, settings)
+    if reason:
+        return refusal(question, chunks, llm, reason)
+    text = llm.complete(GROUNDED_SYSTEM_PROMPT, build_grounded_message(question, chunks))
+    return finish_grounded(question, chunks, llm, text)
+
+
+def could_be_refusal(buffer: str) -> bool:
+    """True while `buffer` (what the model has said so far) is still a prefix of `REFUSAL_TEXT`,
+    ignoring surrounding whitespace and quote characters (as `is_refusal` does)."""
+    return REFUSAL_TEXT.startswith(buffer.strip("\"'*` \n"))
+
+
+def stream_answer(
+    question: str, chunks: list[RetrievedChunk], llm: LLM, settings: Settings
+) -> Iterator[str | Answer]:
+    """Like `answer_from_chunks`, but yield text deltas as the model writes, then the final
+    `Answer` (always last, and the authoritative text: invalid markers removed).
+
+    Grounded mode holds text back while the reply could still turn out to be the fixed refusal
+    text, so a model refusal is never shown as partial tokens; it ends with an Answer whose
+    refusal_reason is "model". Refusals decided before the LLM call yield only the Answer.
+    """
+    if settings.answer_mode == "baseline":
+        parts: list[str] = []
+        for delta in llm.stream(SYSTEM_PROMPT, build_user_message(question, chunks)):
+            parts.append(delta)
+            yield delta
+        yield Answer(question=question, answer="".join(parts), chunks=chunks, model=llm.model)
+        return
+
+    reason = refusal_before_llm(chunks, settings)
+    if reason:
+        yield refusal(question, chunks, llm, reason)
+        return
+
+    parts = []
+    held = True  # nothing sent yet; the reply may still be the refusal
+    for delta in llm.stream(GROUNDED_SYSTEM_PROMPT, build_grounded_message(question, chunks)):
+        parts.append(delta)
+        if not held:
+            yield delta
+        elif not could_be_refusal("".join(parts)):
+            held = False
+            yield "".join(parts)
+    text = "".join(parts)
+    if held and text and not is_refusal(text):  # ended while still a prefix of the refusal
+        yield text
+    yield finish_grounded(question, chunks, llm, text)

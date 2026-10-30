@@ -139,8 +139,11 @@ def test_build_index_script_refuses_parse_errors(monkeypatch, capsys):
     )
     script = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(script)
-    monkeypatch.setattr(script, "load_corpus", lambda root, s: ([], ["cannot parse x.pdf: bad"]))
-    monkeypatch.setattr(script, "sync_index", lambda *a, **k: pytest.fail("index touched"))
+    # The script and POST /ingest share app.rag.ingest, which holds the parse and sync calls.
+    monkeypatch.setattr(
+        "app.rag.ingest.load_corpus", lambda root, s: ([], ["cannot parse x.pdf: bad"])
+    )
+    monkeypatch.setattr("app.rag.ingest.sync_index", lambda *a, **k: pytest.fail("index touched"))
     monkeypatch.setattr(sys, "argv", ["build_index.py"])
     assert script.main() == 1
     out = capsys.readouterr().out

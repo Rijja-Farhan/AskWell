@@ -98,6 +98,58 @@ Only cited sources are listed under `Sources:`. `ask.py` exits 0 for refusals.
 
 The same `answer_from_chunks` serves the CLI and the eval runner. Access rules and prompt-injection defenses are not part of this phase.
 
+## API
+
+`python scripts/serve.py [--host 127.0.0.1] [--port 8000]` runs the FastAPI app (`app.api.main:app`; defaults from `API_HOST` / `API_PORT`). Run one server at a time and no other script on `chroma_db/` meanwhile (the local store is single-writer). `API_CORS_ORIGINS` is a comma list of allowed origins (empty = CORS off). There is no authentication yet (Phase 12); `/ingest` is open.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /health` | Liveness, always `200 {"status":"ok"}` |
+| `GET /health/ready` | No network calls. 200 when ready, else 503 with the same body and a `problems` list: `status, index_present, documents, chunks, provider, api_key_present (boolean only), answer_mode, retrieval_mode, reranker, problems` |
+| `POST /chat` | JSON answer |
+| `POST /chat/stream` | The same answer as Server-Sent Events |
+| `POST /ingest` | Parse `data/raw/` and sync the index (same code as `build_index.py`); body `{"full": false}` is optional. Returns the sync stats. One ingest at a time (409 otherwise); chat waits while it runs |
+
+Request body of both chat endpoints: `question` (1 to 2000 chars), optional `k` (1 to 20, default `RETRIEVAL_TOP_K`), `departments` (list of `HR|IT|Operations|Finance`), `as_of` (`YYYY-MM-DD`), `version_policy`, `include_text` (add each source's chunk text). No history yet (Phase 11).
+
+Response of `/chat`, and the `done` event: `answer, refused, refusal_reason (null|no_context|low_score|model), citations [{number, chunk_id, doc_id, title, section}], invalid_citations, sources [{rank, chunk_id, doc_id, title, section, score, version, status, effective_date}], model, latency_ms`. `[n]` in `answer` is `sources[n-1]`.
+
+`/chat/stream` sends `text/event-stream`, each event as `event: <name>` plus one JSON `data:` line:
+
+| Event | Data |
+|---|---|
+| `sources` | `{"sources": [...]}` as above, sent before generation |
+| `token` | `{"text": "<delta>"}`, zero or more |
+| `done` | The final payload, same shape as `/chat`. Its `answer` has invalid markers removed and `citations` are validated: replace the streamed text with it |
+| `error` | `{"code", "message"}`, then the stream ends |
+
+Refusals before the LLM (`no_context`, `low_score`) send `sources` then `done`, no `token`. In grounded mode text is held back while the reply could still be the fixed refusal, so a model refusal never appears as partial tokens; it ends with `done` (`refused: true`, `refusal_reason: "model"`).
+
+Errors always have the body `{"error": {"code", "message"}}` (validation adds `details`, parse errors add `errors`):
+
+| Status | Code | When |
+|---|---|---|
+| 422 | `validation_error` | Bad request body |
+| 422 | `parse_errors` | `/ingest`: a file failed to parse; index unchanged |
+| 409 | `ingest_busy` | `/ingest` while another ingest runs |
+| 503 | `missing_api_key`, `index_not_ready` | Setup problem (message says what to do) |
+| 503 | `provider_unavailable` | Connection error, 429 or 5xx after retries; has a `Retry-After` header |
+| 502 | `provider_error` | Other provider status error |
+
+After a stream has started, the same codes arrive as the `error` event instead of a status. Messages never contain keys or stack traces.
+
+```bash
+python scripts/serve.py &
+curl -s localhost:8000/health/ready
+curl -s -X POST localhost:8000/chat -H 'content-type: application/json' \
+  -d '{"question":"How many days of annual leave do new employees get?","departments":["HR"]}'
+curl -N -s -X POST localhost:8000/chat/stream -H 'content-type: application/json' \
+  -d '{"question":"How many days of annual leave do new employees get?"}'
+curl -s -X POST localhost:8000/ingest -H 'content-type: application/json' -d '{"full": false}'
+```
+
+Phase 10 added no eval run; the eval documentation below is unchanged.
+
 ## Evaluate
 
 Scores the pipeline on the 80-question eval set and writes `manifest.json`, `results.jsonl`, `report.json` and `report.md` to `eval/reports/<name>/`.
@@ -137,6 +189,7 @@ Progress is saved after every question: rerunning the same command skips finishe
 | `app/` | Application code |
 | `app/ingestion/` | Loaders that parse every corpus format into one `ParsedDocument` |
 | `app/rag/` | RAG pipeline: structure-aware and fixed chunking, embeddings, incremental Chroma index, dense/BM25/hybrid retrieval, cross-encoder reranking, metadata filters, LLM answers |
+| `app/api/` | FastAPI app: chat (JSON and SSE), ingest, health |
 | `app/evaluation/` | Eval harness: retrieval metrics, LLM judge, resumable runner, reports |
 | `data/raw/` | Source documents (tracked) |
 | `data/processed/` | Generated output (ignored) |

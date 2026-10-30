@@ -3,6 +3,7 @@
 import hashlib
 import math
 import re
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -51,6 +52,12 @@ class FakeLLM:
     def complete(self, system: str, user: str) -> str:
         self.calls.append((system, user))
         return self.reply
+
+    def stream(self, system: str, user: str, size: int = 4) -> Iterator[str]:
+        """Yield the reply in pieces of `size` characters."""
+        self.calls.append((system, user))
+        for i in range(0, len(self.reply), size):
+            yield self.reply[i : i + size]
 
 
 @pytest.fixture(scope="session")

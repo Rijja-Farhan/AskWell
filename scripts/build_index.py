@@ -18,10 +18,9 @@ sys.path.insert(0, str(ROOT))
 import openai  # noqa: E402
 
 from app.config import get_settings  # noqa: E402
-from app.ingestion.pipeline import load_corpus  # noqa: E402
-from app.rag.errors import MissingAPIKeyError  # noqa: E402
+from app.rag.errors import CorpusParseError, MissingAPIKeyError  # noqa: E402
+from app.rag.ingest import ingest_corpus  # noqa: E402
 from app.rag.llm import get_embedder  # noqa: E402
-from app.rag.store import sync_index  # noqa: E402
 
 UNAVAILABLE = (openai.APIConnectionError, openai.RateLimitError, openai.InternalServerError)
 
@@ -32,16 +31,13 @@ def main() -> int:
     args = parser.parse_args()
     settings = get_settings()
 
-    docs, errors = load_corpus(ROOT, settings)
-    if errors:
+    try:
+        stats = ingest_corpus(ROOT, lambda: get_embedder(settings), settings, full=args.full)
+    except CorpusParseError as exc:
         print("Parse errors; the index was not changed:")
-        for error in errors:
+        for error in exc.errors:
             print(f"  {error}")
         return 1
-
-    try:
-        embedder = get_embedder(settings)
-        stats = sync_index(docs, embedder, settings, full=args.full)
     except MissingAPIKeyError as exc:
         print(exc)
         return 2

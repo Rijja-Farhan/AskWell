@@ -5,6 +5,7 @@ and OpenAI through the SDK default. Switching provider is a `.env` change plus a
 The SDK retries HTTP 408/409/429/5xx with exponential backoff, up to `llm_max_retries` times.
 """
 
+from collections.abc import Iterator
 from typing import Protocol
 
 from openai import OpenAI
@@ -20,6 +21,8 @@ class LLM(Protocol):
     model: str
 
     def complete(self, system: str, user: str) -> str: ...
+
+    def stream(self, system: str, user: str) -> Iterator[str]: ...
 
 
 class OpenAICompatLLM:
@@ -39,6 +42,24 @@ class OpenAICompatLLM:
             ],
         )
         return response.choices[0].message.content or ""
+
+    def stream(self, system: str, user: str) -> Iterator[str]:
+        """Yield the reply's text deltas as they arrive (empty deltas are skipped)."""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            temperature=0,
+            stream=True,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        )
+        for event in response:
+            if not event.choices:
+                continue
+            delta = event.choices[0].delta.content
+            if delta:
+                yield delta
 
 
 def api_key_variable(provider: str) -> str:

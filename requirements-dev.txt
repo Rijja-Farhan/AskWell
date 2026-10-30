@@ -6,3 +6,6 @@ ruff~=0.17.0
 
 # Dataset generation (Phase 1 only; runtime never writes PDFs)
 reportlab>=4.2,<6
+
+# API tests (Phase 10): FastAPI TestClient needs httpx
+httpx>=0.27,<1
